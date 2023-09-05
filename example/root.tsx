@@ -1,21 +1,25 @@
-import { Outlet } from "slow";
+import { Outlet, useLoader } from "slow";
+import { metadata as metadata$ } from "./loader.ts";
+import { SlowCityProvider } from "../app/provider.tsx";
 
 function App() {
-  return <span>App</span>;
+  return <span>{"<App />"}</span>;
 }
 
 export default function () {
+  const metadata = useLoader(metadata$);
+
   return (
-    <html>
+    <SlowCityProvider>
       <head>
-        <title>anything</title>
+        <title>{metadata.title}</title>
       </head>
       <body>
-        <App />
         <a href="https://www.baidu.com">
-          <Outlet />
+          <App />
         </a>
+        <Outlet />
       </body>
-    </html>
+    </SlowCityProvider>
   );
 }

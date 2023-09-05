@@ -1,8 +1,6 @@
-import { action$, useAction } from "./app/hooks/action.ts";
-import { loader$ } from "./app/hooks/loader.ts";
-import { useLoader } from "./app/hooks/use-loader.ts";
-import { Outlet } from "./app/outlet.tsx";
-
-export { action$, useAction };
-export { loader$, useLoader };
-export { Outlet };
+export { action$, useAction } from "./app/hooks/action.ts";
+export { loader$ } from "./app/hooks/loader.ts";
+export { useLoader } from "./app/hooks/use-loader.ts";
+export { Outlet } from "./app/outlet.tsx";
+export { SlowCityProvider } from "./app/provider.tsx";
+export { createSlowCity } from "./app/create-slow-city.ts";

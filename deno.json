@@ -9,6 +9,7 @@
     "preact/": "https://esm.sh/preact@10.17.1/",
     "preact/hooks": "https://esm.sh/preact@10.17.1/hooks",
     "preact-render-to-string": "https://esm.sh/preact-render-to-string@6.2.1",
+    "path": "https://deno.land/std@0.201.0/path/mod.ts",
     "slow": "./mod.ts"
   }
 }

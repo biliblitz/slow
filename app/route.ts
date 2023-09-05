@@ -1,59 +1,104 @@
-import { RoutePath } from "./utils.ts";
+import { assert } from "https://deno.land/std@0.201.0/assert/assert.ts";
+import { Module, ActionReference, RoutePathType } from "./utils.ts";
 
-function isDynamicRoute(path: string) {
-  return path.startsWith("[") && path.endsWith("]");
-}
+export type MatchRoute = {
+  module: Module;
+  param?: [string, string];
+};
 
-function isCatchAllRoute(path: string) {
-  return path === "[...]";
-}
+export function matchRoutes(
+  module: Module,
+  pathname: string,
+  condition: (module: Module) => boolean
+): MatchRoute[] | false {
+  // assert(isValidPathname(pathname));
 
-export function validateRoutePath(path: RoutePath) {
-  // catch all route must be the last one
-  for (let i = 0; i < path.length; ++i) {
-    if (isCatchAllRoute(path[i]) && i !== path.length - 1) {
-      throw new Error("Invalid Path");
+  const result: MatchRoute[] = [];
+
+  function dfs(module: Module, pathname: string) {
+    // remove leading double slash
+
+    // matches!
+    if (condition(module) && pathname === "/") {
+      result.push({ module });
+      return true;
+    }
+
+    for (const route of module.routes) {
+      switch (route.path.type) {
+        case RoutePathType.MATCH: {
+          if (
+            pathname.startsWith("/" + route.path.value + "/") &&
+            dfs(route.module, pathname.slice(route.path.value.length + 1))
+          ) {
+            result.unshift({ module: route.module });
+            return true;
+          }
+          break;
+        }
+        case RoutePathType.PASS: {
+          if (dfs(route.module, pathname)) {
+            result.unshift({ module: route.module });
+            return true;
+          }
+          break;
+        }
+        case RoutePathType.PARAM: {
+          if (pathname === "/") continue;
+          // slash is the second position of '/'
+          const slash = pathname.slice(1).indexOf("/") + 1;
+          if (dfs(route.module, pathname.slice(slash))) {
+            result.unshift({
+              module: route.module,
+              param: [route.path.value, pathname.slice(1, slash)],
+            });
+            return true;
+          }
+          break;
+        }
+        case RoutePathType.CATCH: {
+          result.unshift({
+            module: route.module,
+            param: ["$", pathname],
+          });
+          return true;
+        }
+      }
     }
   }
+
+  if (dfs(module, pathname)) {
+    return result;
+  }
+
+  return false;
 }
 
-export function compareRoutePaths(a: RoutePath, b: RoutePath) {
-  for (let i = 0; i < Math.min(a.length, b.length); ++i) {
-    const ca = isCatchAllRoute(a[i]);
-    const cb = isCatchAllRoute(b[i]);
-    // conflicts if both are catch all routes
-    if (ca && cb) {
-      throw new Error("Dynamic route conflicts");
-    }
-    // if one is catch all route, must be greater
-    if (ca) return 1;
-    if (cb) return -1;
+export function matchPageRoutes(module: Module, pathname: string) {
+  return matchRoutes(module, pathname, (module) => !!module.index);
+}
 
-    // if same depends on nest routes
-    if (a[i] === b[i]) {
-      continue;
-    }
+export function matchActionRoutes(
+  module: Module,
+  pathname: string,
+  action: ActionReference
+) {
+  return matchRoutes(module, pathname, (module) =>
+    module.actions.includes(action)
+  );
+}
 
-    const da = isDynamicRoute(a[i]);
-    const db = isDynamicRoute(b[i]);
-    // conflicts if both are dynamic routes
-    if (da && db) {
-      throw new Error("Dynamic route conflicts");
-    }
-    // if one is dynamic route, must be greater
-    if (da) return 1;
-    if (db) return -1;
+export function isValidPathname(pathname: string) {
+  return (
+    pathname.startsWith("/") &&
+    pathname.endsWith("/") &&
+    !pathname.includes("//")
+  );
+}
 
-    // if both are normal path, sort by dictionary order
-    return a[i] > b[i] ? 1 : -1;
-  }
-
-  // if a and b are totally same, it is not good
-  if (a.length === b.length) {
-    throw new Error("duplicated routes");
-  }
-
-  // if a includes b / b includes a
-  // the longer is greater
-  return a.length - b.length;
+export function fixPathname(pathname: string) {
+  while (pathname.includes("//")) pathname = pathname.replaceAll("//", "/");
+  if (!pathname.startsWith("/")) pathname = "/" + pathname;
+  if (!pathname.endsWith("/")) pathname = pathname + "/";
+  return pathname;
 }

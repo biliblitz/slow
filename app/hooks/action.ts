@@ -5,17 +5,21 @@ export type ActionResponse<T> =
   | Promise<URL>
   | Promise<Response>
   | Promise<T>;
-export type Action<T, R> = (req: Request, t: T) => ActionResponse<R>;
+export type ActionFunction<T> = (req: Request) => ActionResponse<T>;
 export type ActionResult<R> = {
   data?: R | null;
 };
+export type Action<T> = {
+  nick: string;
+  func: ActionFunction<T>;
+};
 
-export function useAction<T, R>(action: Action<T, R>): ActionResult<R> {
+export function useAction<T>(action: Action<T>): ActionResult<T> {
   // TODO
   // return action(t);
   return null as any;
 }
 
-export function action$<T, R>(action: Action<T, R>): Action<T, R> {
-  return action;
+export function action$<T>(action: ActionFunction<T>): Action<T> {
+  return { nick: "", func: action };
 }

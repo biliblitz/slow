@@ -1,5 +1,16 @@
-import { compareRoutePaths, validateRoutePath } from "./route.ts";
-import { Module, Project, RoutePath } from "./utils.ts";
+import { Action } from "./hooks/action.ts";
+import { Loader } from "./hooks/loader.ts";
+import {
+  Module,
+  ActionReference,
+  LoaderReference,
+  Project,
+  RoutePathType,
+  createModule,
+  getRoutePathComponent,
+  sha256,
+} from "./utils.ts";
+import { join } from "path";
 
 const jsreg = /\.[jt]sx?$/;
 
@@ -27,113 +38,115 @@ function filenameMatches(filename: string, target: string) {
   );
 }
 
-export async function buildRoute(
-  directory: string,
-  path: RoutePath,
-  layouts: string[],
-  middlewares: string[]
-) {
-  const module: Module = {
-    path,
-    index: null,
-    layouts,
-    actions: [],
-    loaders: [],
-    middlewares,
-  };
-
-  const routes: Module[] = [];
-
-  const files: string[] = [];
-  const dirs: string[] = [];
-
-  for await (const file of Deno.readDir(directory)) {
-    if (file.isDirectory) dirs.push(file.name);
-    else if (file.isFile) files.push(file.name);
-  }
-
-  let layoutFound = false;
-  let middlewareFound = false;
-
-  for (const filename of files) {
-    const filepath = `${directory}/${filename}`;
-    if (filenameMatches(filename, "index")) {
-      if (module.index) {
-        throw new Error("Multiple index found");
-      }
-      module.index = filepath;
-    } else if (filenameMatches(filename, "layout")) {
-      if (layoutFound) {
-        throw new Error("Multiple layout found");
-      }
-      layoutFound = true;
-      layouts.push(filepath);
-    } else if (filenameMatches(filename, "middleware")) {
-      if (middlewareFound) {
-        throw new Error("Multiple middleware found");
-      }
-      middlewareFound = true;
-      middlewares.push(filepath);
-    } else if (filenameMatchesWithNickname(filename, "loader")) {
-      const names = await import(filepath);
-      module.loaders.push({ filepath, exports: Object.keys(names) });
-    } else if (filenameMatchesWithNickname(filename, "action")) {
-      const names = await import(filepath);
-      module.actions.push({ filepath, exports: Object.keys(names) });
-    }
-  }
-
-  for (const dirname of dirs) {
-    const dirpath = `${directory}/${dirname}`;
-
-    routes.push(
-      ...(await buildRoute(
-        dirpath,
-        [...path, dirname],
-        [...layouts],
-        [...middlewares]
-      ))
-    );
-  }
-
-  if (module.index || module.actions.length > 0 || module.loaders.length > 0) {
-    routes.push(module);
-  }
-
-  return routes;
-}
-
 export async function build(root = "./app") {
   const cwd = await Deno.realPath(root);
   console.log(`[build] working in ${cwd}`);
 
   const project: Project = {
-    rootpath: "",
-    routes: [],
+    root: createModule(),
+    dictionary: {
+      loader: new Map<LoaderReference, Loader<any>>(),
+      action: new Map<ActionReference, Action<any>>(),
+    },
   };
+
+  async function registerLoader(filepath: string): Promise<LoaderReference[]> {
+    const loaders = (await import(filepath)) as Record<string, Loader<any>>;
+    return await Promise.all(
+      Object.entries(loaders).map(async ([funcname, loader]) => {
+        const name = `${filepath}\0${funcname}`;
+        const nick = (await sha256(name)).slice(0, 8);
+        loader.nick = nick;
+        project.dictionary.loader.set(nick, loader);
+        return nick;
+      })
+    );
+  }
+
+  async function registerAction(filepath: string): Promise<ActionReference[]> {
+    const actions = (await import(filepath)) as Record<string, Action<any>>;
+    return await Promise.all(
+      Object.entries(actions).map(async ([funcname, action]) => {
+        const name = `${filepath}\0${funcname}`;
+        const nick = (await sha256(name)).slice(0, 8);
+        action.nick = nick;
+        project.dictionary.action.set(nick, action);
+        return nick;
+      })
+    );
+  }
+
+  async function buildRoute(directory: string) {
+    const module: Module = {
+      index: null,
+      layout: null,
+      middleware: null,
+      actions: [],
+      loaders: [],
+      routes: [],
+    };
+
+    const files: string[] = [];
+    const dirs: string[] = [];
+
+    for await (const file of Deno.readDir(directory)) {
+      if (file.isDirectory) dirs.push(file.name);
+      else if (file.isFile) files.push(file.name);
+      else throw new Error("Symlink is not supported yet");
+    }
+
+    for (const filename of files) {
+      const filepath = `${directory}/${filename}`;
+      if (filenameMatches(filename, "index")) {
+        if (module.index) throw new Error("Multiple index found");
+        module.index = filepath;
+      } else if (filenameMatches(filename, "layout")) {
+        if (module.layout) throw new Error("Multiple layout found");
+        module.layout = filepath;
+      } else if (filenameMatches(filename, "middleware")) {
+        if (module.middleware) throw new Error("Multiple middleware found");
+        module.middleware = filepath;
+      } else if (filenameMatchesWithNickname(filename, "loader")) {
+        module.loaders.push(...(await registerLoader(filepath)));
+      } else if (filenameMatchesWithNickname(filename, "action")) {
+        module.actions.push(...(await registerAction(filepath)));
+      }
+    }
+
+    for (const dirname of dirs) {
+      const dirpath = join(directory, dirname);
+      const pathComponent = getRoutePathComponent(dirname);
+
+      module.routes.push({
+        path: pathComponent,
+        module: await buildRoute(dirpath),
+      });
+    }
+
+    // sort route types
+    // match --> pass --> param --> catch
+    module.routes.sort((a, b) => a.path.type - b.path.type);
+
+    return module;
+  }
+
+  project.root.routes.push({
+    path: { type: RoutePathType.PASS },
+    module: await buildRoute(join(cwd, "routes")),
+  });
 
   for await (const file of Deno.readDir(cwd)) {
     if (file.isFile) {
-      const filename = `${cwd}/${file.name}`;
+      const filepath = join(cwd, file.name);
       if (filenameMatches(file.name, "root")) {
-        project.rootpath = filename;
-      }
-    } else if (file.isDirectory) {
-      // recursive directory
-      if (file.name === "routes") {
-        project.routes = await buildRoute(`${cwd}/${file.name}`, [], [], []);
+        project.root.layout = filepath;
+      } else if (filenameMatchesWithNickname(file.name, "loader")) {
+        project.root.loaders.push(...(await registerLoader(filepath)));
+      } else if (filenameMatchesWithNickname(file.name, "action")) {
+        project.root.actions.push(...(await registerAction(filepath)));
       }
     }
   }
-
-  console.dir(project, { depth: null });
-  // validate path
-  for (const route of project.routes) {
-    validateRoutePath(route.path);
-    console.log(route.path);
-  }
-  // sort paths for later use
-  project.routes.sort((a, b) => compareRoutePaths(a.path, b.path));
 
   return project;
 }
