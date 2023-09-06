@@ -1,4 +1,9 @@
-import { ActionReference, Dictionary, LoaderReference } from "../utils.ts";
+import {
+  ActionReference,
+  ComponentReference,
+  Dictionary,
+  LoaderReference,
+} from "../utils.ts";
 import { Manager } from "./index.ts";
 
 type ComponentDictionary = Dictionary["components"];
@@ -7,6 +12,8 @@ type ServerManagerOptions = {
   components: ComponentDictionary;
   loaders: Map<LoaderReference, any>;
   actions: Map<ActionReference, any>;
+  url: URL;
+  tree: ComponentReference[];
 };
 
 export function createServerManager(options: ServerManagerOptions): Manager {
@@ -19,6 +26,12 @@ export function createServerManager(options: ServerManagerOptions): Manager {
     },
     getComponent(key) {
       return options.components.get(key)!;
+    },
+    getCurrentURL() {
+      return options.url;
+    },
+    getCurrentRenderTree() {
+      return options.tree;
     },
   };
 }

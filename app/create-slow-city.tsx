@@ -1,12 +1,13 @@
+import { VNode } from "preact";
 import { render } from "preact-render-to-string";
 
-import { ActionReference, LoaderReference, Project } from "./utils.ts";
+import { ActionReference, ComponentReference, LoaderReference, Project } from "./utils.ts";
 import { fixPathname, isValidPathname, matchRoutes } from "./route.ts";
 import { ManagerContext } from "./manager/index.ts";
 import { createServerManager } from "./manager/server.ts";
 import { Outlet, OutletContext } from "./outlet.tsx";
 
-export function createSlowCity() {
+export function createSlowCity(root: VNode) {
   return (project: Project) => {
     return async (req: Request) => {
       const url = new URL(req.url);
@@ -15,18 +16,26 @@ export function createSlowCity() {
       const isFetchData = pathname.endsWith("/s-data.json");
       if (isFetchData) pathname = pathname.slice(0, -11);
 
-      // fix pathname if is request a page
+      // fix pathname if request can be valid after fix
       if (!isValidPathname(pathname)) {
-        url.pathname = fixPathname(pathname);
-        if (isFetchData) url.pathname += "s-data.json";
-        return Response.redirect(url.href);
+        pathname = fixPathname(pathname);
+        // if fixed path could match any existing route
+        const matches = matchRoutes(project.root, pathname);
+        if (matches) {
+          // then redirect to fixed path
+          url.pathname = pathname;
+          if (isFetchData) url.pathname += "s-data.json";
+          return Response.redirect(url.href);
+        } else {
+          // otherwise return 404 page
+          return new Response(null, { status: 404 });
+        }
       }
 
       const routes = matchRoutes(project.root, pathname);
       if (!routes) {
         return new Response(null, { status: 404 });
       }
-      // console.log(routes);
 
       const actionResults: (readonly [ActionReference, unknown])[] = [];
       const loaderResults: (readonly [LoaderReference, unknown])[] = [];
@@ -122,33 +131,28 @@ export function createSlowCity() {
         });
       }
 
-      // const manager = new ServerManager(routes, project.dictionary.components);
-      // for (const [key, value] of loaderResults)
-      //   manager.setLoaderData(key, value);
-      // for (const [key, value] of actionResults)
-      //   manager.setActionData(key, value);
-
-      const outlets: string[] = [];
+      const tree: ComponentReference[] = [];
       for (const route of routes) {
         if (route.module.layout) {
-          outlets.push(route.module.layout);
+          tree.push(route.module.layout);
         }
       }
-      outlets.push(routes.at(-1)!.module.index!);
+      tree.push(routes.at(-1)!.module.index!);
 
       const manager = createServerManager({
         actions: new Map(actionResults),
         loaders: new Map(loaderResults),
         components: project.dictionary.components,
+        url,
+        tree,
       });
 
       const html = render(
         <ManagerContext.Provider value={manager}>
-          <OutletContext.Provider value={outlets}>
-            <Outlet />
-          </OutletContext.Provider>
+          {root}
         </ManagerContext.Provider>
       );
+
       return new Response("<!DOCTYPE html>" + html, {
         headers: {
           "content-type": "text/html",

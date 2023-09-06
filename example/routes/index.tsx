@@ -8,7 +8,10 @@ export default function () {
 
   return (
     <div>
-      username = {name.username}, user = {usr.user}
+      <div>
+        username = {name.username}, user = {usr.user}
+      </div>
+      <div>/index.ts</div>
     </div>
   );
 }

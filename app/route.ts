@@ -13,7 +13,7 @@ export function matchRoutes(
 
   const result: MatchRoute[] = [];
 
-  function dfs(module: Module, pathname: string) {
+  function searchRoute(module: Module, pathname: string) {
     // remove leading double slash
 
     // matches!
@@ -27,7 +27,10 @@ export function matchRoutes(
         case RoutePathType.MATCH: {
           if (
             pathname.startsWith("/" + route.path.value + "/") &&
-            dfs(route.module, pathname.slice(route.path.value.length + 1))
+            searchRoute(
+              route.module,
+              pathname.slice(route.path.value.length + 1)
+            )
           ) {
             result.unshift({ module });
             return true;
@@ -35,7 +38,7 @@ export function matchRoutes(
           break;
         }
         case RoutePathType.PASS: {
-          if (dfs(route.module, pathname)) {
+          if (searchRoute(route.module, pathname)) {
             result.unshift({ module });
             return true;
           }
@@ -45,7 +48,7 @@ export function matchRoutes(
           if (pathname === "/") continue;
           // slash is the second position of '/'
           const slash = pathname.slice(1).indexOf("/") + 1;
-          if (dfs(route.module, pathname.slice(slash))) {
+          if (searchRoute(route.module, pathname.slice(slash))) {
             result.unshift({
               module,
               param: [route.path.value, pathname.slice(1, slash)],
@@ -65,7 +68,7 @@ export function matchRoutes(
     }
   }
 
-  if (dfs(module, pathname)) {
+  if (searchRoute(module, pathname)) {
     return result;
   }
 

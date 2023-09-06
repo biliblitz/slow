@@ -81,6 +81,10 @@ export async function sha256(message: string) {
     .join("");
 }
 
+export async function hash(message: string) {
+  return (await sha256(message)).slice(0, 8);
+}
+
 const jsreg = /\.[jt]sx?$/;
 
 function isJavaScriptFile(filename: string) {

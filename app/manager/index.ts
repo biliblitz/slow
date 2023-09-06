@@ -10,6 +10,9 @@ export interface Manager {
   getLoaderData(key: LoaderReference): any;
   getActionData(key: ActionReference): any;
   getComponent(key: ComponentReference): FunctionComponent;
+
+  getCurrentURL(): URL;
+  getCurrentRenderTree(): ComponentReference[];
 }
 
 export const ManagerContext = createContext<Manager | null>(null);

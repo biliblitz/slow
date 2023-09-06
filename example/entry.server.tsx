@@ -1,3 +1,4 @@
 import { createSlowCity } from "slow";
+import Root from "./root.tsx";
 
-export default createSlowCity();
+export default createSlowCity(<Root />);
