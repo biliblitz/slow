@@ -1,5 +1,6 @@
 import { Action } from "./hooks/action.ts";
 import { Loader } from "./hooks/loader.ts";
+import { Middleware } from "./hooks/middleware.ts";
 import {
   Module,
   ActionReference,
@@ -9,37 +10,16 @@ import {
   createModule,
   getRoutePathComponent,
   sha256,
+  ComponentReference,
+  MiddlewareReference,
+  filenameMatches,
+  filenameMatchesWithNickname,
 } from "./utils.ts";
 import { join } from "path";
+import { FunctionComponent } from "preact";
 
-import * as esbuild from "esbuild";
-import { denoPlugins } from "esbuild_deno_loader";
-
-const jsreg = /\.[jt]sx?$/;
-
-function isJavaScriptFile(filename: string) {
-  if (Deno.build.os === "windows") {
-    filename = filename.toLocaleLowerCase();
-  }
-  return jsreg.test(filename);
-}
-
-/**
- * Matches `loader.ts`, `loader.nick.tsx`, `loader.anything.else.ts`
- */
-function filenameMatchesWithNickname(filename: string, target: string) {
-  return isJavaScriptFile(filename) && filename.startsWith(target + ".");
-}
-
-/**
- * Matches `root.ts`, `root.tsx`
- */
-function filenameMatches(filename: string, target: string) {
-  return (
-    filename.startsWith(target) &&
-    isJavaScriptFile(filename.slice(target.length))
-  );
-}
+// import * as esbuild from "esbuild";
+// import { denoPlugins } from "esbuild_deno_loader";
 
 export async function build(root = "./app") {
   const cwd = await Deno.realPath(root);
@@ -48,16 +28,18 @@ export async function build(root = "./app") {
   const project: Project = {
     root: createModule(),
     dictionary: {
-      loader: new Map<LoaderReference, Loader<any>>(),
-      action: new Map<ActionReference, Action<any>>(),
+      loader: new Map(),
+      action: new Map(),
+      components: new Map(),
+      middlewares: new Map(),
     },
   };
 
   async function registerLoader(filepath: string): Promise<LoaderReference[]> {
-    const loaders = (await import(filepath)) as Record<string, Loader<any>>;
+    const loaders = (await import(filepath)) as Record<string, Loader>;
     return await Promise.all(
       Object.entries(loaders).map(async ([funcname, loader]) => {
-        const name = `${filepath}\0${funcname}`;
+        const name = `loader:file://${filepath}#${funcname}`;
         const nick = (await sha256(name)).slice(0, 8);
         loader.nick = nick;
         project.dictionary.loader.set(nick, loader);
@@ -67,16 +49,42 @@ export async function build(root = "./app") {
   }
 
   async function registerAction(filepath: string): Promise<ActionReference[]> {
-    const actions = (await import(filepath)) as Record<string, Action<any>>;
+    const actions = (await import(filepath)) as Record<string, Action>;
     return await Promise.all(
       Object.entries(actions).map(async ([funcname, action]) => {
-        const name = `${filepath}\0${funcname}`;
+        const name = `action:file://${filepath}#${funcname}`;
         const nick = (await sha256(name)).slice(0, 8);
         action.nick = nick;
         project.dictionary.action.set(nick, action);
         return nick;
       })
     );
+  }
+
+  async function registerComponent(
+    filepath: string
+  ): Promise<ComponentReference> {
+    const component = (await import(filepath)).default as FunctionComponent;
+    if (!component) {
+      throw new Error("Index/Layout must export a default component");
+    }
+    const name = `component:file://${filepath}#default`;
+    const nick = (await sha256(name)).slice(0, 8);
+    project.dictionary.components.set(nick, component);
+    return nick;
+  }
+
+  async function registerMiddleware(
+    filepath: string
+  ): Promise<MiddlewareReference> {
+    const middleware = (await import(filepath)).default as Middleware;
+    if (!middleware) {
+      throw new Error("Middleware must be exported as default");
+    }
+    const name = `middleware:file://${filepath}#default`;
+    const nick = (await sha256(name)).slice(0, 8);
+    project.dictionary.middlewares.set(nick, middleware);
+    return nick;
   }
 
   async function buildRoute(directory: string) {
@@ -102,13 +110,13 @@ export async function build(root = "./app") {
       const filepath = `${directory}/${filename}`;
       if (filenameMatches(filename, "index")) {
         if (module.index) throw new Error("Multiple index found");
-        module.index = filepath;
+        module.index = await registerComponent(filepath);
       } else if (filenameMatches(filename, "layout")) {
         if (module.layout) throw new Error("Multiple layout found");
-        module.layout = filepath;
+        module.layout = await registerComponent(filepath);
       } else if (filenameMatches(filename, "middleware")) {
         if (module.middleware) throw new Error("Multiple middleware found");
-        module.middleware = filepath;
+        module.middleware = await registerMiddleware(filepath);
       } else if (filenameMatchesWithNickname(filename, "loader")) {
         module.loaders.push(...(await registerLoader(filepath)));
       } else if (filenameMatchesWithNickname(filename, "action")) {
@@ -142,7 +150,8 @@ export async function build(root = "./app") {
     if (file.isFile) {
       const filepath = join(cwd, file.name);
       if (filenameMatches(file.name, "root")) {
-        project.root.layout = filepath;
+        if (project.root.layout) throw new Error("Multiple root files found");
+        project.root.layout = await registerComponent(filepath);
       } else if (filenameMatchesWithNickname(file.name, "loader")) {
         project.root.loaders.push(...(await registerLoader(filepath)));
       } else if (filenameMatchesWithNickname(file.name, "action")) {
@@ -151,16 +160,16 @@ export async function build(root = "./app") {
     }
   }
 
-  // TODO: this is panic!
-  await esbuild.build({
-    plugins: [...denoPlugins()],
-    entryPoints: [project.root.layout!],
-    bundle: true,
-    // minify: true,
-    outdir: "./build",
-    jsxImportSource: "preact",
-    jsx: "transform",
-  });
+  // // TODO: this is panic!
+  // await esbuild.build({
+  //   plugins: [...denoPlugins()],
+  //   entryPoints: [project.root.layout!],
+  //   bundle: true,
+  //   // minify: true,
+  //   outdir: "./build",
+  //   jsxImportSource: "preact",
+  //   jsx: "transform",
+  // });
 
   return project;
 }

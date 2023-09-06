@@ -1,9 +1,24 @@
-import { Project } from "../utils.ts";
-import { Manager } from "./manager.ts";
+import { ActionReference, Dictionary, LoaderReference } from "../utils.ts";
+import { Manager } from "./index.ts";
 
-/** server side manager */
-export class ServerManager extends Manager {
-  constructor(project: Project, url: URL) {
-    super(project, url);
-  }
+type ComponentDictionary = Dictionary["components"];
+
+type ServerManagerOptions = {
+  components: ComponentDictionary;
+  loaders: Map<LoaderReference, any>;
+  actions: Map<ActionReference, any>;
+};
+
+export function createServerManager(options: ServerManagerOptions): Manager {
+  return {
+    getLoaderData(key) {
+      return options.loaders.get(key)!;
+    },
+    getActionData(key) {
+      return options.actions.get(key)!;
+    },
+    getComponent(key) {
+      return options.components.get(key)!;
+    },
+  };
 }

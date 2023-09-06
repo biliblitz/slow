@@ -29,14 +29,14 @@ export function matchRoutes(
             pathname.startsWith("/" + route.path.value + "/") &&
             dfs(route.module, pathname.slice(route.path.value.length + 1))
           ) {
-            result.unshift({ module: route.module });
+            result.unshift({ module });
             return true;
           }
           break;
         }
         case RoutePathType.PASS: {
           if (dfs(route.module, pathname)) {
-            result.unshift({ module: route.module });
+            result.unshift({ module });
             return true;
           }
           break;
@@ -47,7 +47,7 @@ export function matchRoutes(
           const slash = pathname.slice(1).indexOf("/") + 1;
           if (dfs(route.module, pathname.slice(slash))) {
             result.unshift({
-              module: route.module,
+              module,
               param: [route.path.value, pathname.slice(1, slash)],
             });
             return true;
@@ -56,7 +56,7 @@ export function matchRoutes(
         }
         case RoutePathType.CATCH: {
           result.unshift({
-            module: route.module,
+            module,
             param: ["$", pathname],
           });
           return true;

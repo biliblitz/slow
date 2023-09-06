@@ -1,16 +1,22 @@
 import { ComponentChildren, createContext } from "preact";
 import { useContext } from "preact/hooks";
+import { ComponentReference } from "./utils.ts";
+import { useManager } from "./manager/index.ts";
 
-export const OutletContext = createContext<ComponentChildren[]>([]);
+export const OutletContext = createContext<ComponentReference[]>([]);
 
 export function Outlet() {
   const context = useContext(OutletContext);
 
   if (context.length > 0) {
     const [value, ...remain] = context;
+    const manager = useManager();
+    const Component = manager.getComponent(value);
 
     return (
-      <OutletContext.Provider value={remain}>{value}</OutletContext.Provider>
+      <OutletContext.Provider value={remain}>
+        <Component />
+      </OutletContext.Provider>
     );
   }
 

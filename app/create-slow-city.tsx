@@ -1,99 +1,13 @@
-import renderToString from "preact-render-to-string";
+import { render } from "preact-render-to-string";
 
-import { VNode } from "preact";
 import { ActionReference, LoaderReference, Project } from "./utils.ts";
 import { fixPathname, isValidPathname, matchRoutes } from "./route.ts";
 import { ManagerContext } from "./manager/index.ts";
-import { ServerManager } from "./manager/server.ts";
+import { createServerManager } from "./manager/server.ts";
+import { Outlet, OutletContext } from "./outlet.tsx";
 
-export function createSlowCity(root: VNode) {
+export function createSlowCity() {
   return (project: Project) => {
-    // function runAction(routes: MatchRoute[], actionRef: ActionReference) {
-    //   const actionResults: (readonly [ActionReference, any])[] = [];
-    //   const loaderResults: (readonly [LoaderReference, any])[] = [];
-
-    //     // search action in routes
-    //     const actionRoute = routes.find((route) =>
-    //       route.module.actions.includes(actionRef)
-    //     );
-    //     if (!actionRoute) {
-    //       return new Response("404 Action not Found", { status: 404 });
-    //     }
-
-    //     // check if method is allowed
-    //     const action = project.dictionary.action.get(actionRef)!;
-    //     if (action.method !== req.method) {
-    //       const headers = new Headers();
-    //       headers.set("Allow", action.method);
-    //       return new Response("405 Method not Allowed", {
-    //         status: 405,
-    //         headers,
-    //       });
-    //     }
-
-    //     // run action
-    //     for (const route of routes) {
-    //       if (route.module.middleware) {
-    //         const middleware = await import(route.module.middleware);
-    //         await middleware(req);
-    //       }
-    //       if (route.module.actions.includes(actionRef)) {
-    //         actionResults.push([actionRef, await action.func(req)]);
-    //         break;
-    //       }
-    //     }
-
-    //     // get all loaders
-    //     for (const route of routes) {
-    //       // apply middleware
-    //       if (route.module.middleware) {
-    //         const middleware = await import(route.module.middleware);
-    //         await middleware(req);
-    //       }
-
-    //       // run all loader parallel
-    //       const results = await Promise.all(
-    //         route.module.loaders.map(async (ref) => {
-    //           const loader = project.dictionary.loader.get(ref)!;
-    //           const result = await loader.func(req);
-    //           return [ref, result] as const;
-    //         })
-    //       );
-    //       loaderResults.push(...results);
-    //   }
-    //   // otherwise should be a normal get request
-    //   else {
-    //     // normal loader must be GET
-    //     if (req.method !== "GET") {
-    //       const headers = new Headers();
-    //       headers.set("allow", "GET");
-    //       return new Response("405 Method not Allowed", {
-    //         status: 405,
-    //         headers,
-    //       });
-    //     }
-
-    //     // get all loaders
-    //     for (const route of routes) {
-    //       // apply middleware
-    //       if (route.module.middleware) {
-    //         const middleware = await import(route.module.middleware);
-    //         await middleware(req);
-    //       }
-
-    //       // run all loader parallel
-    //       const results = await Promise.all(
-    //         route.module.loaders.map(async (ref) => {
-    //           const loader = project.dictionary.loader.get(ref)!;
-    //           const result = await loader.func(req);
-    //           return [ref, result] as const;
-    //         })
-    //       );
-    //       loaderResults.push(...results);
-    //     }
-    //   }
-    // }
-
     return async (req: Request) => {
       const url = new URL(req.url);
 
@@ -112,9 +26,10 @@ export function createSlowCity(root: VNode) {
       if (!routes) {
         return new Response(null, { status: 404 });
       }
+      // console.log(routes);
 
-      const actionResults: (readonly [ActionReference, any])[] = [];
-      const loaderResults: (readonly [LoaderReference, any])[] = [];
+      const actionResults: (readonly [ActionReference, unknown])[] = [];
+      const loaderResults: (readonly [LoaderReference, unknown])[] = [];
 
       try {
         const actionRef = url.searchParams.get("saction");
@@ -140,8 +55,10 @@ export function createSlowCity(root: VNode) {
           // run action
           for (const route of routes) {
             if (route.module.middleware) {
-              const middleware = await import(route.module.middleware);
-              await middleware.default(req);
+              const middleware = project.dictionary.middlewares.get(
+                route.module.middleware
+              )!;
+              await middleware(req);
             }
             if (route.module.actions.includes(actionRef)) {
               actionResults.push([actionRef, await action.func(req)]);
@@ -160,8 +77,10 @@ export function createSlowCity(root: VNode) {
         for (const route of routes) {
           // apply middleware
           if (route.module.middleware) {
-            const middleware = await import(route.module.middleware);
-            await middleware.default(req);
+            const middleware = project.dictionary.middlewares.get(
+              route.module.middleware
+            )!;
+            await middleware(req);
           }
           // run all loader parallel
           const results = await Promise.all(
@@ -203,20 +122,38 @@ export function createSlowCity(root: VNode) {
         });
       }
 
-      const manager = new ServerManager(project, url);
-      for (const [key, value] of loaderResults) {
-        manager.setLoaderData(key, value);
-      }
-      for (const [key, value] of actionResults) {
-        manager.setActionData(key, value);
-      }
+      // const manager = new ServerManager(routes, project.dictionary.components);
+      // for (const [key, value] of loaderResults)
+      //   manager.setLoaderData(key, value);
+      // for (const [key, value] of actionResults)
+      //   manager.setActionData(key, value);
 
-      const html = renderToString(
+      const outlets: string[] = [];
+      for (const route of routes) {
+        if (route.module.layout) {
+          outlets.push(route.module.layout);
+        }
+      }
+      outlets.push(routes.at(-1)!.module.index!);
+
+      const manager = createServerManager({
+        actions: new Map(actionResults),
+        loaders: new Map(loaderResults),
+        components: project.dictionary.components,
+      });
+
+      const html = render(
         <ManagerContext.Provider value={manager}>
-          {root}
+          <OutletContext.Provider value={outlets}>
+            <Outlet />
+          </OutletContext.Provider>
         </ManagerContext.Provider>
       );
-      return new Response("<!DOCTYPE html>" + html);
+      return new Response("<!DOCTYPE html>" + html, {
+        headers: {
+          "content-type": "text/html",
+        },
+      });
     };
   };
 }

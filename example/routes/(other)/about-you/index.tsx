@@ -1,3 +1,3 @@
 export default function () {
-  return <div>about you</div>;
+  return <div>/about-you/index</div>;
 }

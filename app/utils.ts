@@ -1,8 +1,13 @@
+import { FunctionComponent } from "preact";
 import { Action } from "./hooks/action.ts";
 import { Loader } from "./hooks/loader.ts";
+import { Middleware } from "./hooks/middleware.ts";
 
 export type ActionReference = string;
 export type LoaderReference = string;
+
+export type ComponentReference = string;
+export type MiddlewareReference = string;
 
 export enum RoutePathType {
   MATCH = 0,
@@ -23,20 +28,24 @@ export type Route = {
 };
 
 export type Module = {
-  index: string | null;
-  layout: string | null;
-  middleware: string | null;
+  index: ComponentReference | null;
+  layout: ComponentReference | null;
+  middleware: MiddlewareReference | null;
   actions: ActionReference[];
   loaders: LoaderReference[];
   routes: Route[];
 };
 
+export type Dictionary = {
+  action: Map<ActionReference, Action>;
+  loader: Map<LoaderReference, Loader>;
+  components: Map<ComponentReference, FunctionComponent>;
+  middlewares: Map<MiddlewareReference, Middleware>;
+};
+
 export type Project = {
   root: Module;
-  dictionary: {
-    action: Map<ActionReference, Action<any>>;
-    loader: Map<LoaderReference, Loader<any>>;
-  };
+  dictionary: Dictionary;
 };
 
 export function createModule(): Module {
@@ -70,4 +79,30 @@ export async function sha256(message: string) {
   return Array.from(new Uint8Array(key))
     .map((byte) => byte.toString(16).padStart(2, "0"))
     .join("");
+}
+
+const jsreg = /\.[jt]sx?$/;
+
+function isJavaScriptFile(filename: string) {
+  if (Deno.build.os === "windows") {
+    filename = filename.toLocaleLowerCase();
+  }
+  return jsreg.test(filename);
+}
+
+/**
+ * Matches `loader.ts`, `loader.nick.tsx`, `loader.anything.else.ts`
+ */
+export function filenameMatchesWithNickname(filename: string, target: string) {
+  return isJavaScriptFile(filename) && filename.startsWith(target + ".");
+}
+
+/**
+ * Matches `root.ts`, `root.tsx`
+ */
+export function filenameMatches(filename: string, target: string) {
+  return (
+    filename.startsWith(target) &&
+    isJavaScriptFile(filename.slice(target.length))
+  );
 }
