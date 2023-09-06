@@ -1,8 +1,10 @@
 import { ComponentChildren } from "preact";
-import { useInitialContext } from "./hooks.ts";
+import { OutletContext } from "./outlet.tsx";
 
 export function SlowCityProvider(props: { children?: ComponentChildren }) {
-  const context = useInitialContext();
-
-  return <html>{props.children}</html>;
+  return (
+    <OutletContext.Provider value={[]}>
+      <html>{props.children}</html>
+    </OutletContext.Provider>
+  );
 }

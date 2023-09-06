@@ -12,6 +12,9 @@ import {
 } from "./utils.ts";
 import { join } from "path";
 
+import * as esbuild from "esbuild";
+import { denoPlugins } from "esbuild_deno_loader";
+
 const jsreg = /\.[jt]sx?$/;
 
 function isJavaScriptFile(filename: string) {
@@ -147,6 +150,17 @@ export async function build(root = "./app") {
       }
     }
   }
+
+  // TODO: this is panic!
+  await esbuild.build({
+    plugins: [...denoPlugins()],
+    entryPoints: [project.root.layout!],
+    bundle: true,
+    // minify: true,
+    outdir: "./build",
+    jsxImportSource: "preact",
+    jsx: "transform",
+  });
 
   return project;
 }

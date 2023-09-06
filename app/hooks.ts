@@ -2,17 +2,17 @@ import { createContext } from "preact";
 import { useContext } from "preact/hooks";
 import { Project } from "./utils.ts";
 
-export type InitialContext = {
+export type CityContext = {
   project: Project;
   url: URL;
 };
 
-export const SlowInitialContext = createContext<InitialContext | null>(null);
+export const SlowCityContext = createContext<CityContext | null>(null);
 
-export function useInitialContext() {
-  const context = useContext(SlowInitialContext);
+export function useSlowCity() {
+  const context = useContext(SlowCityContext);
   if (!context) {
-    throw new Error("invalid call to useInitialContext");
+    throw new Error("invalid call to useSlowCity");
   }
   return context;
 }

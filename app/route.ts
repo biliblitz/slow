@@ -1,5 +1,4 @@
-import { assert } from "https://deno.land/std@0.201.0/assert/assert.ts";
-import { Module, ActionReference, RoutePathType } from "./utils.ts";
+import { Module, RoutePathType } from "./utils.ts";
 
 export type MatchRoute = {
   module: Module;
@@ -8,9 +7,8 @@ export type MatchRoute = {
 
 export function matchRoutes(
   module: Module,
-  pathname: string,
-  condition: (module: Module) => boolean
-): MatchRoute[] | false {
+  pathname: string
+): MatchRoute[] | null {
   // assert(isValidPathname(pathname));
 
   const result: MatchRoute[] = [];
@@ -19,7 +17,7 @@ export function matchRoutes(
     // remove leading double slash
 
     // matches!
-    if (condition(module) && pathname === "/") {
+    if (pathname === "/" && module.index) {
       result.push({ module });
       return true;
     }
@@ -71,21 +69,7 @@ export function matchRoutes(
     return result;
   }
 
-  return false;
-}
-
-export function matchPageRoutes(module: Module, pathname: string) {
-  return matchRoutes(module, pathname, (module) => !!module.index);
-}
-
-export function matchActionRoutes(
-  module: Module,
-  pathname: string,
-  action: ActionReference
-) {
-  return matchRoutes(module, pathname, (module) =>
-    module.actions.includes(action)
-  );
+  return null;
 }
 
 export function isValidPathname(pathname: string) {
