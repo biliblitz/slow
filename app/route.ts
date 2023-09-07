@@ -9,8 +9,6 @@ export function matchRoutes(
   module: Module,
   pathname: string
 ): MatchRoute[] | null {
-  // assert(isValidPathname(pathname));
-
   const result: MatchRoute[] = [];
 
   function searchRoute(module: Module, pathname: string) {

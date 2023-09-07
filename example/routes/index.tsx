@@ -8,7 +8,7 @@ export default function () {
 
   return (
     <div>
-      <div>
+      <div onClick={() => console.log("click!!", name, usr)}>
         username = {name.username}, user = {usr.user}
       </div>
       <div>/index.ts</div>

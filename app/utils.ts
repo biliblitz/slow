@@ -9,6 +9,9 @@ export type LoaderReference = string;
 export type ComponentReference = string;
 export type MiddlewareReference = string;
 
+/** `build/s-XXXXXXXX.js` */
+export type BuiltFile = string;
+
 export enum RoutePathType {
   MATCH = 0,
   PASS = 1,
@@ -40,12 +43,9 @@ export type Dictionary = {
   action: Map<ActionReference, Action>;
   loader: Map<LoaderReference, Loader>;
   components: Map<ComponentReference, FunctionComponent>;
+  componentPaths: Map<ComponentReference, string>;
+  componentImports: Map<ComponentReference, BuiltFile>;
   middlewares: Map<MiddlewareReference, Middleware>;
-};
-
-export type Project = {
-  root: Module;
-  dictionary: Dictionary;
 };
 
 export function createModule(): Module {

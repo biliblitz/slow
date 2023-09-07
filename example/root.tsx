@@ -1,4 +1,4 @@
-import { Outlet, SlowCityProvider } from "slow";
+import { Outlet, SlowCityProvider, Scripts, RouterHead } from "slow";
 
 function App() {
   return <span>{"<App />  <script>"}</span>;
@@ -9,6 +9,7 @@ export default function () {
     <SlowCityProvider>
       <head>
         <meta charSet="utf-8" />
+        <RouterHead />
       </head>
       <body>
         <span>root</span>
@@ -16,6 +17,8 @@ export default function () {
           <App />
         </a>
         <Outlet />
+
+        <Scripts />
       </body>
     </SlowCityProvider>
   );

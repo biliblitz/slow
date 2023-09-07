@@ -1,11 +1,15 @@
 import { VNode } from "preact";
-import { render } from "preact-render-to-string";
+import { render as renderToString } from "preact-render-to-string";
 
-import { ActionReference, ComponentReference, LoaderReference, Project } from "./utils.ts";
+import {
+  ActionReference,
+  ComponentReference,
+  LoaderReference,
+} from "./utils.ts";
 import { fixPathname, isValidPathname, matchRoutes } from "./route.ts";
 import { ManagerContext } from "./manager/index.ts";
 import { createServerManager } from "./manager/server.ts";
-import { Outlet, OutletContext } from "./outlet.tsx";
+import { Project } from "./build.ts";
 
 export function createSlowCity(root: VNode) {
   return (project: Project) => {
@@ -142,12 +146,12 @@ export function createSlowCity(root: VNode) {
       const manager = createServerManager({
         actions: new Map(actionResults),
         loaders: new Map(loaderResults),
-        components: project.dictionary.components,
-        url,
-        tree,
+        imports: project.dictionary.componentImports,
+        entrance: project.entrance,
+        buildGraph: project.buildGraph,
       });
 
-      const html = render(
+      const html = renderToString(
         <ManagerContext.Provider value={manager}>
           {root}
         </ManagerContext.Provider>

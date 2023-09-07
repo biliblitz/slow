@@ -4,7 +4,6 @@ import { Middleware } from "./hooks/middleware.ts";
 import {
   ActionReference,
   LoaderReference,
-  Project,
   createModule,
   getRoutePathComponent,
   ComponentReference,
@@ -14,21 +13,23 @@ import {
   hash,
   Dictionary,
 } from "./utils.ts";
-import { join } from "path";
+import { join, resolve } from "path";
 import { FunctionComponent } from "preact";
 
-// import * as esbuild from "esbuild";
-// import { denoPlugins } from "esbuild_deno_loader";
+import * as esbuild from "esbuild";
+import { denoPlugins } from "esbuild_deno_loader";
 
-export async function build(root = "./app") {
-  const cwd = await Deno.realPath(root);
-  console.log(`[build] working in ${cwd}`);
+export async function build(workingDir = "./app") {
+  workingDir = resolve(workingDir);
+  // console.log(`[build] working in ${workingDir}`);
 
   const dictionary: Dictionary = {
     loader: new Map(),
     action: new Map(),
     components: new Map(),
     middlewares: new Map(),
+    componentPaths: new Map(),
+    componentImports: new Map(),
   };
 
   async function registerLoader(filepath: string): Promise<LoaderReference[]> {
@@ -64,6 +65,7 @@ export async function build(root = "./app") {
     }
     const nick = await hash(`component:file://${filepath}#default`);
     dictionary.components.set(nick, component);
+    dictionary.componentPaths.set(nick, filepath);
     return nick;
   }
 
@@ -125,21 +127,57 @@ export async function build(root = "./app") {
     return module;
   }
 
-  const project: Project = {
-    root: await buildRoute(join(cwd, "routes")),
-    dictionary,
-  };
+  const root = await buildRoute(join(workingDir, "routes"));
 
-  // // TODO: this is panic!
-  // await esbuild.build({
-  //   plugins: [...denoPlugins()],
-  //   entryPoints: [project.root.layout!],
-  //   bundle: true,
-  //   // minify: true,
-  //   outdir: "./build",
-  //   jsxImportSource: "preact",
-  //   jsx: "transform",
-  // });
+  // === analyze entry points ===
+  const entryPoints = [
+    // add client entrance
+    join(workingDir, "entry.client.tsx"),
+    // components
+    ...dictionary.componentPaths.values(),
+  ];
 
-  return project;
+  // clean build dir
+  const buildDir = "./build";
+  await Deno.remove(buildDir, { recursive: true });
+
+  // TODO: this is panic!
+  const result = await esbuild.build({
+    plugins: [...denoPlugins({ configPath: resolve("./deno.json") })],
+    entryPoints,
+    entryNames: "s-[hash]",
+    bundle: true,
+    splitting: true,
+    minify: true,
+    chunkNames: "s-[hash]",
+    outdir: buildDir,
+    format: "esm",
+    metafile: true,
+    jsx: "automatic",
+    jsxImportSource: "preact",
+  });
+
+  const buildGraph = new Map<string, string[]>(
+    Object.entries(result.metafile.outputs).map(([key, value]) => [
+      key,
+      value.imports.map(({ path }) => path),
+    ])
+  );
+
+  const componentBuildResult = new Map(
+    Object.entries(result.metafile.outputs)
+      .filter(([_, value]) => value.entryPoint)
+      .map(([key, value]) => [resolve(value.entryPoint!), key] as const)
+  );
+
+  for (const [hash, importPath] of dictionary.componentPaths.entries()) {
+    const buildPath = componentBuildResult.get(importPath)!;
+    dictionary.componentImports.set(hash, buildPath);
+  }
+  const entrance = componentBuildResult.get(entryPoints[0])!;
+  // console.log(entrance);
+
+  return { root, dictionary, entrance, buildDir, buildGraph };
 }
+
+export type Project = Awaited<ReturnType<typeof build>>;

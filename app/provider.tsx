@@ -4,10 +4,9 @@ import { OutletContext } from "./outlet.tsx";
 
 export function SlowCityProvider(props: { children?: ComponentChildren }) {
   const manager = useManager();
-  const tree = manager.getCurrentRenderTree();
 
   return (
-    <OutletContext.Provider value={tree}>
+    <OutletContext.Provider value={[]}>
       <html>{props.children}</html>
     </OutletContext.Provider>
   );

@@ -1,37 +1,28 @@
 import {
   ActionReference,
-  ComponentReference,
+  BuiltFile,
   Dictionary,
   LoaderReference,
 } from "../utils.ts";
 import { Manager } from "./index.ts";
 
-type ComponentDictionary = Dictionary["components"];
+type ComponentImports = Dictionary["componentImports"];
 
 type ServerManagerOptions = {
-  components: ComponentDictionary;
+  imports: ComponentImports;
   loaders: Map<LoaderReference, any>;
   actions: Map<ActionReference, any>;
-  url: URL;
-  tree: ComponentReference[];
+  entrance: BuiltFile;
+  buildGraph: Map<BuiltFile, BuiltFile[]>;
 };
 
 export function createServerManager(options: ServerManagerOptions): Manager {
   return {
-    getLoaderData(key) {
-      return options.loaders.get(key)!;
-    },
-    getActionData(key) {
-      return options.actions.get(key)!;
-    },
-    getComponent(key) {
-      return options.components.get(key)!;
-    },
-    getCurrentURL() {
-      return options.url;
-    },
-    getCurrentRenderTree() {
-      return options.tree;
-    },
+    loaders: options.loaders,
+    actions: options.actions,
+    entryPath: options.entrance,
+    basePath: "/",
+    buildGraph: options.buildGraph,
+    imports: options.imports,
   };
 }

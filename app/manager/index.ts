@@ -1,18 +1,14 @@
 import { useContext } from "preact/hooks";
-import { FunctionComponent, createContext } from "preact";
-import {
-  ActionReference,
-  ComponentReference,
-  LoaderReference,
-} from "../utils.ts";
+import { createContext } from "preact";
+import { BuiltFile, ComponentReference, LoaderReference } from "../utils.ts";
 
 export interface Manager {
-  getLoaderData(key: LoaderReference): any;
-  getActionData(key: ActionReference): any;
-  getComponent(key: ComponentReference): FunctionComponent;
-
-  getCurrentURL(): URL;
-  getCurrentRenderTree(): ComponentReference[];
+  loaders: Map<LoaderReference, any>;
+  actions: Map<LoaderReference, any>;
+  entryPath: BuiltFile;
+  basePath: string;
+  buildGraph: Map<BuiltFile, BuiltFile[]>;
+  imports: Map<ComponentReference, BuiltFile>;
 }
 
 export const ManagerContext = createContext<Manager | null>(null);

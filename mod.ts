@@ -7,3 +7,4 @@ export { useAction } from "./app/hooks/use-action.ts";
 export { Outlet } from "./app/outlet.tsx";
 export { SlowCityProvider } from "./app/provider.tsx";
 export { createSlowCity } from "./app/create-slow-city.tsx";
+export { Scripts, RouterHead } from "./app/components.tsx";
