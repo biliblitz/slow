@@ -32,51 +32,64 @@ export async function build(workingDir = "./app") {
     componentImports: new Map(),
   };
 
-  async function registerLoader(filepath: string): Promise<LoaderReference[]> {
-    const loaders = (await import(filepath)) as Record<string, Loader>;
-    return await Promise.all(
+  const loaderPaths: {
+    filePath: string;
+    exports: { funcname: string; ref: string }[];
+  }[] = [];
+  const actionPaths: {
+    filePath: string;
+    exports: { funcname: string; method: string; ref: string }[];
+  }[] = [];
+
+  async function registerLoader(filePath: string): Promise<LoaderReference[]> {
+    const loaders = (await import(filePath)) as Record<string, Loader>;
+    const exports = await Promise.all(
       Object.entries(loaders).map(async ([funcname, loader]) => {
-        const nick = await hash(`loader:file://${filepath}#${funcname}`);
-        loader.nick = nick;
-        dictionary.loader.set(nick, loader);
-        return nick;
+        const ref = await hash(`loader:file://${filePath}#${funcname}`);
+        loader.ref = ref;
+        dictionary.loader.set(ref, loader);
+        return { ref, funcname };
       }),
     );
+    loaderPaths.push({ filePath, exports });
+    return exports.map(({ ref }) => ref);
   }
 
-  async function registerAction(filepath: string): Promise<ActionReference[]> {
-    const actions = (await import(filepath)) as Record<string, Action>;
-    return await Promise.all(
+  async function registerAction(filePath: string): Promise<ActionReference[]> {
+    const actions = (await import(filePath)) as Record<string, Action>;
+    const exports = await Promise.all(
       Object.entries(actions).map(async ([funcname, action]) => {
-        const nick = await hash(`action:file://${filepath}#${funcname}`);
-        action.nick = nick;
-        dictionary.action.set(nick, action);
-        return nick;
+        const ref = await hash(`action:file://${filePath}#${funcname}`);
+        action.ref = ref;
+        dictionary.action.set(ref, action);
+        return { ref, funcname, method: action.method };
       }),
     );
+    actionPaths.push({ filePath, exports });
+    return exports.map(({ ref }) => ref);
   }
 
   async function registerComponent(
-    filepath: string,
+    filePath: string,
   ): Promise<ComponentReference> {
-    const component = (await import(filepath)).default as FunctionComponent;
+    const component = (await import(filePath)).default as FunctionComponent;
     if (!component) {
       throw new Error("Index/Layout must export a default component");
     }
-    const nick = await hash(`component:file://${filepath}#default`);
+    const nick = await hash(`component:file://${filePath}#default`);
     dictionary.components.set(nick, component);
-    dictionary.componentPaths.set(nick, filepath);
+    dictionary.componentPaths.set(nick, filePath);
     return nick;
   }
 
   async function registerMiddleware(
-    filepath: string,
+    filePath: string,
   ): Promise<MiddlewareReference> {
-    const middleware = (await import(filepath)).default as Middleware;
+    const middleware = (await import(filePath)).default as Middleware;
     if (!middleware) {
       throw new Error("Middleware must be exported as default");
     }
-    const nick = await hash(`middleware:file://${filepath}#default`);
+    const nick = await hash(`middleware:file://${filePath}#default`);
     dictionary.middlewares.set(nick, middleware);
     return nick;
   }
@@ -94,20 +107,20 @@ export async function build(workingDir = "./app") {
     }
 
     for (const filename of files) {
-      const filepath = `${directory}/${filename}`;
+      const filePath = `${directory}/${filename}`;
       if (filenameMatches(filename, "index")) {
         if (module.index) throw new Error("Multiple index found");
-        module.index = await registerComponent(filepath);
+        module.index = await registerComponent(filePath);
       } else if (filenameMatches(filename, "layout")) {
         if (module.layout) throw new Error("Multiple layout found");
-        module.layout = await registerComponent(filepath);
+        module.layout = await registerComponent(filePath);
       } else if (filenameMatches(filename, "middleware")) {
         if (module.middleware) throw new Error("Multiple middleware found");
-        module.middleware = await registerMiddleware(filepath);
+        module.middleware = await registerMiddleware(filePath);
       } else if (filenameMatchesWithNickname(filename, "loader")) {
-        module.loaders.push(...(await registerLoader(filepath)));
+        module.loaders.push(...(await registerLoader(filePath)));
       } else if (filenameMatchesWithNickname(filename, "action")) {
-        module.actions.push(...(await registerAction(filepath)));
+        module.actions.push(...(await registerAction(filePath)));
       }
     }
 
@@ -141,9 +154,41 @@ export async function build(workingDir = "./app") {
   const buildDir = "./build";
   await Deno.remove(buildDir, { recursive: true });
 
+  // generate replacements for import loader/action in esbuild
+  const fileConvertList = new Map(
+    [
+      ...loaderPaths.map(({ filePath, exports }) => {
+        const contents = exports.map(({ funcname, ref }) => {
+          return `export const ${funcname} = { ref: "${ref}" };`;
+        }).join("\n");
+        return [filePath, contents] as const;
+      }),
+      ...actionPaths.map(({ filePath, exports }) => {
+        const contents = exports.map(({ funcname, ref, method }) => {
+          return `export const ${funcname} = { ref: "${ref}", method: "${method}" };`;
+        }).join("\n");
+        return [filePath, contents] as const;
+      }),
+    ],
+  );
+  // console.log(fileConvertList);
+
   // TODO: this is panic!
   const result = await esbuild.build({
-    plugins: [...denoPlugins({ configPath: resolve("./deno.json") })],
+    plugins: [{
+      name: "slow",
+      setup(build) {
+        build.onLoad({ filter: /.*/ }, (args) => {
+          if (args.namespace === "file" && fileConvertList.has(args.path)) {
+            return {
+              contents: fileConvertList.get(args.path),
+              loader: "js",
+            };
+          }
+          return null;
+        });
+      },
+    }, ...denoPlugins({ configPath: resolve("./deno.json") })],
     entryPoints,
     entryNames: "s-[hash]",
     bundle: true,
@@ -155,6 +200,7 @@ export async function build(workingDir = "./app") {
     metafile: true,
     jsx: "automatic",
     jsxImportSource: "preact",
+    // sourcemap: true,
   });
 
   const buildGraph = new Map<string, string[]>(

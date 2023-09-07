@@ -6,18 +6,17 @@ function App() {
 
 export default function () {
   return (
-    <SlowCityProvider>
+    <SlowCityProvider lang="en">
       <head>
         <meta charSet="utf-8" />
         <RouterHead />
       </head>
       <body>
-        <span>root</span>
-        <a href="https://www.baidu.com">
+        <span onClick={() => alert("works")}>root</span>
+        <a href="/about-you">
           <App />
         </a>
         <Outlet />
-
         <Scripts />
       </body>
     </SlowCityProvider>

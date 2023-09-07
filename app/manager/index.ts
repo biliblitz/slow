@@ -11,12 +11,25 @@ export interface Manager {
   imports: Map<ComponentReference, BuiltFile>;
 }
 
+export type SerializedManager = {
+  loaders: [LoaderReference, any][];
+  actions: [LoaderReference, any][];
+  entryPath: BuiltFile;
+  basePath: string;
+  buildGraph: [BuiltFile, BuiltFile[]][];
+  imports: [ComponentReference, BuiltFile][];
+};
+
 export const ManagerContext = createContext<Manager | null>(null);
 
 export function useManager() {
   const manager = useContext(ManagerContext);
   if (!manager) {
-    throw new Error("Invalid call to useManager()");
+    throw new Error("Please nest project inside <SlowCityProvider />");
   }
   return manager;
+}
+
+export function useServerManager() {
+  return useContext(ManagerContext);
 }

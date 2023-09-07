@@ -5,6 +5,6 @@ export { useLoader } from "./app/hooks/use-loader.ts";
 export { useAction } from "./app/hooks/use-action.ts";
 
 export { Outlet } from "./app/outlet.tsx";
-export { SlowCityProvider } from "./app/provider.tsx";
+export { SlowCityProvider } from "./app/slow-city-provider.tsx";
 export { createSlowCity } from "./app/create-slow-city.tsx";
 export { RouterHead, Scripts } from "./app/components.tsx";
