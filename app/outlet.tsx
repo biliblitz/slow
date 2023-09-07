@@ -1,5 +1,4 @@
-import { createContext } from "preact";
-import { useContext } from "preact/hooks";
+import { createContext, useContext } from "../deps.ts";
 import { ComponentReference } from "./utils.ts";
 import { useManager } from "./manager/index.ts";
 

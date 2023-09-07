@@ -1,5 +1,4 @@
-import { useContext } from "preact/hooks";
-import { createContext } from "preact";
+import { createContext, useContext } from "../../deps.ts";
 import { BuiltFile, ComponentReference, LoaderReference } from "../utils.ts";
 
 export interface Manager {

@@ -1,7 +1,7 @@
 import { ManagerContext, useServerManager } from "./manager/index.ts";
 import { OutletContext } from "./outlet.tsx";
 import { createClientManager } from "./manager/client.ts";
-import { JSX as JSXInternal } from "preact";
+import { JSX as JSXInternal } from "../deps.ts";
 
 export function SlowCityProvider(
   props: JSXInternal.HTMLAttributes<HTMLHtmlElement>,

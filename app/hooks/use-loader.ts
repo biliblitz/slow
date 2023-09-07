@@ -5,6 +5,6 @@ export type LoaderResponse<T> = T;
 
 export function useLoader<T>(loader: Loader<T>): LoaderResponse<T> {
   const manager = useManager();
-  const data = manager.getLoaderData(loader.nick);
+  const data = manager.loaders.get(loader.ref);
   return data as LoaderResponse<T>;
 }

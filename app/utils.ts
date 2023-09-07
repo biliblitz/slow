@@ -1,4 +1,4 @@
-import { FunctionComponent } from "preact";
+import { FunctionComponent } from "../deps.ts";
 import { Action } from "./hooks/action.ts";
 import { Loader } from "./hooks/loader.ts";
 import { Middleware } from "./hooks/middleware.ts";
@@ -9,7 +9,6 @@ export type LoaderReference = string;
 export type ComponentReference = string;
 export type MiddlewareReference = string;
 
-/** `build/s-XXXXXXXX.js` */
 export type BuiltFile = string;
 
 export enum RoutePathType {

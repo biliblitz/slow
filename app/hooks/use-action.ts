@@ -5,6 +5,6 @@ export type ActionResponse<T> = T;
 
 export function useAction<T>(action: Action<T>): ActionResponse<T> {
   const manager = useManager();
-  const data = manager.getActionData(action.nick);
+  const data = manager.actions.get(action.ref);
   return data as ActionResponse<T>;
 }

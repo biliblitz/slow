@@ -1,5 +1,5 @@
-import { VNode } from "preact";
-import { render as renderToString } from "preact-render-to-string";
+import { extname, renderToString, typeByExtension } from "../server-deps.ts";
+import { VNode } from "../deps.ts";
 
 import {
   ActionReference,
@@ -15,6 +15,23 @@ export function createSlowCity(root: VNode) {
   return (project: Project) => {
     return async (req: Request) => {
       const url = new URL(req.url);
+
+      // if is fetch assets
+      if (url.pathname.startsWith("/build/")) {
+        const assetName = url.pathname.slice(1);
+        const contents = project.buildAssets.get(assetName);
+        if (contents) {
+          const mime = typeByExtension(extname(assetName)) ||
+            "application/octet-stream";
+
+          return new Response(contents, {
+            headers: {
+              "content-type": mime,
+              "cache-control": "max-age=604800",
+            },
+          });
+        }
+      }
 
       let pathname = url.pathname;
       const isFetchData = pathname.endsWith("/s-data.json");

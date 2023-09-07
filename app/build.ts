@@ -13,15 +13,86 @@ import {
   LoaderReference,
   MiddlewareReference,
 } from "./utils.ts";
-import { join, resolve } from "path";
-import { FunctionComponent } from "preact";
+import { FunctionComponent } from "../deps.ts";
+import { denoPlugins, esbuild, join, resolve } from "../server-deps.ts";
 
-import * as esbuild from "esbuild";
-import { denoPlugins } from "esbuild_deno_loader";
+function staticReplacePlugin(mapping: Map<string, string>): esbuild.Plugin {
+  return {
+    name: "static-replace",
+    setup(build) {
+      build.onLoad({ filter: /.*/ }, (args) => {
+        if (args.namespace === "file" && mapping.has(args.path)) {
+          return {
+            contents: mapping.get(args.path),
+            loader: "js",
+          };
+        }
+        return null;
+      });
+    },
+  };
+}
+
+async function buildClientAssets(
+  entryPoints: string[],
+  ...plugins: esbuild.Plugin[]
+) {
+  const result = await esbuild.build({
+    plugins: [
+      ...plugins,
+      ...denoPlugins({ configPath: resolve("./deno.json") }),
+    ],
+    entryPoints,
+    entryNames: "s-[hash]",
+    bundle: true,
+    splitting: true,
+    minify: true,
+    chunkNames: "s-[hash]",
+    outdir: "./build",
+    format: "esm",
+    metafile: true,
+    jsx: "automatic",
+    jsxImportSource: "preact",
+    write: false,
+    // sourcemap: true,
+  });
+
+  // "/project/build/s-XXXXXXXX.js" => "import ..."
+  const filePathToContents = new Map(result.outputFiles.map((file) => {
+    return [file.path, file.contents];
+  }));
+
+  // "build/s-XXXXXXXX.js" => "import ..."
+  const buildAssets = new Map(
+    Object.keys(result.metafile.outputs).map((
+      file,
+    ) => [file, filePathToContents.get(resolve(file))!]),
+  );
+
+  // "build/s-XXXXXXXX.js" => ["build/s-YYYYYYYY.js", "build/s-ZZZZZZZZ.js"]
+  const buildGraph = new Map<string, string[]>(
+    Object.entries(result.metafile.outputs).map(([key, value]) => [
+      key,
+      value.imports.map(({ path }) => path),
+    ]),
+  );
+
+  /** "/path/to/entry/point.tsx" => "build/s-XXXXXXXX.js" */
+  const buildEntries = new Map(
+    Object.entries(result.metafile.outputs)
+      .filter(([_, value]) => value.entryPoint)
+      .map(([key, value]) => [resolve(value.entryPoint!), key] as const),
+  );
+
+  return {
+    buildAssets,
+    buildGraph,
+    buildEntries,
+  };
+}
 
 export async function build(workingDir = "./app") {
   workingDir = resolve(workingDir);
-  // console.log(`[build] working in ${workingDir}`);
 
   const dictionary: Dictionary = {
     loader: new Map(),
@@ -94,7 +165,7 @@ export async function build(workingDir = "./app") {
     return nick;
   }
 
-  async function buildRoute(directory: string) {
+  async function scanRoutes(directory: string) {
     const module = createModule();
 
     const files: string[] = [];
@@ -129,7 +200,7 @@ export async function build(workingDir = "./app") {
 
       module.routes.push({
         path: getRoutePathComponent(dirname),
-        module: await buildRoute(dirpath),
+        module: await scanRoutes(dirpath),
       });
     }
 
@@ -140,7 +211,7 @@ export async function build(workingDir = "./app") {
     return module;
   }
 
-  const root = await buildRoute(join(workingDir, "routes"));
+  const root = await scanRoutes(join(workingDir, "routes"));
 
   // === analyze entry points ===
   const entryPoints = [
@@ -149,10 +220,6 @@ export async function build(workingDir = "./app") {
     // components
     ...dictionary.componentPaths.values(),
   ];
-
-  // clean build dir
-  const buildDir = "./build";
-  await Deno.remove(buildDir, { recursive: true });
 
   // generate replacements for import loader/action in esbuild
   const fileConvertList = new Map(
@@ -171,59 +238,19 @@ export async function build(workingDir = "./app") {
       }),
     ],
   );
-  // console.log(fileConvertList);
 
-  // TODO: this is panic!
-  const result = await esbuild.build({
-    plugins: [{
-      name: "slow",
-      setup(build) {
-        build.onLoad({ filter: /.*/ }, (args) => {
-          if (args.namespace === "file" && fileConvertList.has(args.path)) {
-            return {
-              contents: fileConvertList.get(args.path),
-              loader: "js",
-            };
-          }
-          return null;
-        });
-      },
-    }, ...denoPlugins({ configPath: resolve("./deno.json") })],
+  const { buildAssets, buildGraph, buildEntries } = await buildClientAssets(
     entryPoints,
-    entryNames: "s-[hash]",
-    bundle: true,
-    splitting: true,
-    minify: true,
-    chunkNames: "s-[hash]",
-    outdir: buildDir,
-    format: "esm",
-    metafile: true,
-    jsx: "automatic",
-    jsxImportSource: "preact",
-    // sourcemap: true,
-  });
-
-  const buildGraph = new Map<string, string[]>(
-    Object.entries(result.metafile.outputs).map(([key, value]) => [
-      key,
-      value.imports.map(({ path }) => path),
-    ]),
-  );
-
-  const componentBuildResult = new Map(
-    Object.entries(result.metafile.outputs)
-      .filter(([_, value]) => value.entryPoint)
-      .map(([key, value]) => [resolve(value.entryPoint!), key] as const),
+    staticReplacePlugin(fileConvertList),
   );
 
   for (const [hash, importPath] of dictionary.componentPaths.entries()) {
-    const buildPath = componentBuildResult.get(importPath)!;
+    const buildPath = buildEntries.get(importPath)!;
     dictionary.componentImports.set(hash, buildPath);
   }
-  const entrance = componentBuildResult.get(entryPoints[0])!;
-  // console.log(entrance);
+  const entrance = buildEntries.get(entryPoints[0])!;
 
-  return { root, dictionary, entrance, buildDir, buildGraph };
+  return { root, dictionary, entrance, buildAssets, buildGraph };
 }
 
 export type Project = Awaited<ReturnType<typeof build>>;
