@@ -69,7 +69,7 @@ export function createSlowCity(root: VNode) {
           for (const route of routes) {
             if (route.module.middleware) {
               const middleware = project.dictionary.middlewares.get(
-                route.module.middleware
+                route.module.middleware,
               )!;
               await middleware(req);
             }
@@ -91,7 +91,7 @@ export function createSlowCity(root: VNode) {
           // apply middleware
           if (route.module.middleware) {
             const middleware = project.dictionary.middlewares.get(
-              route.module.middleware
+              route.module.middleware,
             )!;
             await middleware(req);
           }
@@ -101,7 +101,7 @@ export function createSlowCity(root: VNode) {
               const loader = project.dictionary.loader.get(ref)!;
               const result = await loader.func(req);
               return [ref, result] as const;
-            })
+            }),
           );
           loaderResults.push(...results);
         }
@@ -116,9 +116,9 @@ export function createSlowCity(root: VNode) {
         if (e instanceof URL) {
           return isFetchData
             ? Response.json({
-                ok: "redirect",
-                redirect: e.href,
-              })
+              ok: "redirect",
+              redirect: e.href,
+            })
             : Response.redirect(e);
         }
         // otherwise it's a internal error
@@ -154,7 +154,7 @@ export function createSlowCity(root: VNode) {
       const html = renderToString(
         <ManagerContext.Provider value={manager}>
           {root}
-        </ManagerContext.Provider>
+        </ManagerContext.Provider>,
       );
 
       return new Response("<!DOCTYPE html>" + html, {

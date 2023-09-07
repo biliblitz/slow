@@ -7,7 +7,7 @@ export type MatchRoute = {
 
 export function matchRoutes(
   module: Module,
-  pathname: string
+  pathname: string,
 ): MatchRoute[] | null {
   const result: MatchRoute[] = [];
 
@@ -27,7 +27,7 @@ export function matchRoutes(
             pathname.startsWith("/" + route.path.value + "/") &&
             searchRoute(
               route.module,
-              pathname.slice(route.path.value.length + 1)
+              pathname.slice(route.path.value.length + 1),
             )
           ) {
             result.unshift({ module });

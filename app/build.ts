@@ -3,15 +3,15 @@ import { Loader } from "./hooks/loader.ts";
 import { Middleware } from "./hooks/middleware.ts";
 import {
   ActionReference,
-  LoaderReference,
-  createModule,
-  getRoutePathComponent,
   ComponentReference,
-  MiddlewareReference,
+  createModule,
+  Dictionary,
   filenameMatches,
   filenameMatchesWithNickname,
+  getRoutePathComponent,
   hash,
-  Dictionary,
+  LoaderReference,
+  MiddlewareReference,
 } from "./utils.ts";
 import { join, resolve } from "path";
 import { FunctionComponent } from "preact";
@@ -40,7 +40,7 @@ export async function build(workingDir = "./app") {
         loader.nick = nick;
         dictionary.loader.set(nick, loader);
         return nick;
-      })
+      }),
     );
   }
 
@@ -52,12 +52,12 @@ export async function build(workingDir = "./app") {
         action.nick = nick;
         dictionary.action.set(nick, action);
         return nick;
-      })
+      }),
     );
   }
 
   async function registerComponent(
-    filepath: string
+    filepath: string,
   ): Promise<ComponentReference> {
     const component = (await import(filepath)).default as FunctionComponent;
     if (!component) {
@@ -70,7 +70,7 @@ export async function build(workingDir = "./app") {
   }
 
   async function registerMiddleware(
-    filepath: string
+    filepath: string,
   ): Promise<MiddlewareReference> {
     const middleware = (await import(filepath)).default as Middleware;
     if (!middleware) {
@@ -161,13 +161,13 @@ export async function build(workingDir = "./app") {
     Object.entries(result.metafile.outputs).map(([key, value]) => [
       key,
       value.imports.map(({ path }) => path),
-    ])
+    ]),
   );
 
   const componentBuildResult = new Map(
     Object.entries(result.metafile.outputs)
       .filter(([_, value]) => value.entryPoint)
-      .map(([key, value]) => [resolve(value.entryPoint!), key] as const)
+      .map(([key, value]) => [resolve(value.entryPoint!), key] as const),
   );
 
   for (const [hash, importPath] of dictionary.componentPaths.entries()) {

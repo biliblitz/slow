@@ -14,5 +14,6 @@
     "esbuild": "https://deno.land/x/esbuild@v0.17.9/mod.js",
     "esbuild_deno_loader": "https://deno.land/x/esbuild_deno_loader@0.8.1/mod.ts",
     "slow": "./mod.ts"
-  }
+  },
+  "importMap": "./vendor/import_map.json"
 }

@@ -1,4 +1,4 @@
-import { Outlet, SlowCityProvider, Scripts, RouterHead } from "slow";
+import { Outlet, RouterHead, Scripts, SlowCityProvider } from "slow";
 
 function App() {
   return <span>{"<App />  <script>"}</span>;
