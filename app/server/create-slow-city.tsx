@@ -119,7 +119,7 @@ export function createSlowCity(root: VNode, project: Project) {
         const results = await Promise.all(
           route.module.loaders.map(async (ref) => {
             const loader = project.dictionary.loader.get(ref)!;
-            const result = await loader.func(req);
+            const result = await loader.__func(req);
             return [ref, result] as const;
           }),
         );

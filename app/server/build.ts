@@ -111,11 +111,11 @@ export async function build(workingDir = "./app") {
   }[] = [];
 
   async function registerLoader(filePath: string): Promise<LoaderReference[]> {
-    const loaders = (await import(filePath)) as Record<string, Loader>;
+    const loaders = (await import(filePath)) as Record<string, Loader<{}>>;
     const exports = await Promise.all(
       Object.entries(loaders).map(async ([funcname, loader]) => {
         const ref = await hash(`loader:file://${filePath}#${funcname}`);
-        loader.ref = ref;
+        loader.__ref = ref;
         dictionary.loader.set(ref, loader);
         return { ref, funcname };
       }),
@@ -223,9 +223,12 @@ export async function build(workingDir = "./app") {
   const fileConvertList = new Map(
     [
       ...loaderPaths.map(({ filePath, exports }) => {
-        const contents = exports.map(({ funcname, ref }) => {
-          return `export const ${funcname} = { ref: "${ref}" };`;
-        }).join("\n");
+        const contents = [
+          'import { useLoader } from "slow";',
+          ...exports.map(({ funcname, ref }) => {
+            return `export const ${funcname} = () => useLoader("${ref}");`;
+          }),
+        ].join("\n");
         return [filePath, contents] as const;
       }),
       ...actionPaths.map(({ filePath, exports }) => {

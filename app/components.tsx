@@ -53,10 +53,8 @@ export function RouterHead() {
       <title>233</title>
       {deps.map((dep) => (
         <link
-          rel="preload"
+          rel="modulepreload"
           href={manager.basePath + dep}
-          // TODO: fix this
-          as="script"
           key={dep}
         />
       ))}

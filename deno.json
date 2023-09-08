@@ -5,7 +5,7 @@
     "lib": ["deno.window", "dom"]
   },
   "imports": {
-    "preact": "https://esm.sh/preact@10.17.0",
-    "preact/": "https://esm.sh/preact@10.17.0/"
+    "preact": "https://esm.sh/preact@10.17.1",
+    "preact/": "https://esm.sh/preact@10.17.1/"
   }
 }

@@ -40,7 +40,7 @@ export type Module = {
 
 export type Dictionary = {
   action: Map<ActionReference, Action>;
-  loader: Map<LoaderReference, Loader>;
+  loader: Map<LoaderReference, Loader<any>>;
   components: Map<ComponentReference, FunctionComponent>;
   componentPaths: Map<ComponentReference, string>;
   componentImports: Map<ComponentReference, BuiltFile>;
