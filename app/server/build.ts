@@ -1,6 +1,9 @@
-import { Action } from "./hooks/action.ts";
-import { Loader } from "./hooks/loader.ts";
-import { Middleware } from "./hooks/middleware.ts";
+import { FunctionComponent } from "../../deps.ts";
+import { denoPlugins, esbuild, join, resolve } from "../../server-deps.ts";
+
+import { Action } from "../hooks/action.ts";
+import { Loader } from "../hooks/loader.ts";
+import { Middleware } from "../hooks/middleware.ts";
 import {
   ActionReference,
   ComponentReference,
@@ -12,9 +15,7 @@ import {
   hash,
   LoaderReference,
   MiddlewareReference,
-} from "./utils.ts";
-import { FunctionComponent } from "../deps.ts";
-import { denoPlugins, esbuild, join, resolve } from "../server-deps.ts";
+} from "../utils.ts";
 
 function staticReplacePlugin(mapping: Map<string, string>): esbuild.Plugin {
   return {
@@ -35,13 +36,10 @@ function staticReplacePlugin(mapping: Map<string, string>): esbuild.Plugin {
 
 async function buildClientAssets(
   entryPoints: string[],
-  ...plugins: esbuild.Plugin[]
+  plugins: esbuild.Plugin[],
 ) {
   const result = await esbuild.build({
-    plugins: [
-      ...plugins,
-      ...denoPlugins({ configPath: resolve("./deno.json") }),
-    ],
+    plugins,
     entryPoints,
     entryNames: "s-[hash]",
     bundle: true,
@@ -241,7 +239,12 @@ export async function build(workingDir = "./app") {
 
   const { buildAssets, buildGraph, buildEntries } = await buildClientAssets(
     entryPoints,
-    staticReplacePlugin(fileConvertList),
+    [
+      staticReplacePlugin(fileConvertList),
+      ...denoPlugins({
+        configPath: resolve("./deno.json"),
+      }) as esbuild.Plugin[],
+    ],
   );
 
   for (const [hash, importPath] of dictionary.componentPaths.entries()) {

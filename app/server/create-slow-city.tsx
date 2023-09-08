@@ -1,14 +1,14 @@
-import { extname, renderToString, typeByExtension } from "../server-deps.ts";
-import { VNode } from "../deps.ts";
+import { extname, renderToString, typeByExtension } from "../../server-deps.ts";
+import { VNode } from "../../deps.ts";
 
 import {
   ActionReference,
   ComponentReference,
   LoaderReference,
-} from "./utils.ts";
-import { matchRoutes } from "./route.ts";
-import { ManagerContext } from "./manager/index.ts";
-import { createServerManager } from "./manager/server.ts";
+} from "../utils.ts";
+import { matchRoutes } from "../route.ts";
+import { ManagerContext } from "../manager/index.ts";
+import { createServerManager } from "../manager/server.ts";
 import { Project } from "./build.ts";
 
 export function createSlowCity(root: VNode, project: Project) {

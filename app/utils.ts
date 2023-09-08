@@ -84,9 +84,9 @@ export async function hash(message: string) {
   return (await sha256(message)).slice(0, 8);
 }
 
-const jsreg = /\.[jt]sx?$/;
+const jsreg = /\.(?:js|ts|md)x?$/;
 
-function isJavaScriptFile(filename: string) {
+function isSourceFile(filename: string) {
   if (Deno.build.os === "windows") {
     filename = filename.toLocaleLowerCase();
   }
@@ -97,7 +97,7 @@ function isJavaScriptFile(filename: string) {
  * Matches `loader.ts`, `loader.nick.tsx`, `loader.anything.else.ts`
  */
 export function filenameMatchesWithNickname(filename: string, target: string) {
-  return isJavaScriptFile(filename) && filename.startsWith(target + ".");
+  return isSourceFile(filename) && filename.startsWith(target + ".");
 }
 
 /**
@@ -106,7 +106,7 @@ export function filenameMatchesWithNickname(filename: string, target: string) {
 export function filenameMatches(filename: string, target: string) {
   return (
     filename.startsWith(target) &&
-    isJavaScriptFile(filename.slice(target.length))
+    isSourceFile(filename.slice(target.length))
   );
 }
 

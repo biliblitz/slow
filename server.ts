@@ -1,2 +1,2 @@
-export { build as buildSlowCity } from "./app/build.ts";
-export { createSlowCity } from "./app/create-slow-city.tsx";
+export { build as buildSlowCity } from "./app/server/build.ts";
+export { createSlowCity } from "./app/server/create-slow-city.tsx";
