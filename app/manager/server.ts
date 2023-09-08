@@ -1,6 +1,8 @@
+import { FunctionComponent } from "../../deps.ts";
 import {
   ActionReference,
   BuiltFile,
+  ComponentReference,
   Dictionary,
   LoaderReference,
 } from "../utils.ts";
@@ -14,6 +16,8 @@ type ServerManagerOptions = {
   actions: Map<ActionReference, any>;
   entrance: BuiltFile;
   buildGraph: Map<BuiltFile, BuiltFile[]>;
+  renderTree: ComponentReference[];
+  components: Map<ComponentReference, FunctionComponent>;
 };
 
 export function createServerManager(options: ServerManagerOptions): Manager {
@@ -24,5 +28,7 @@ export function createServerManager(options: ServerManagerOptions): Manager {
     basePath: "/",
     buildGraph: options.buildGraph,
     imports: options.imports,
+    renderTree: options.renderTree,
+    components: options.components,
   };
 }

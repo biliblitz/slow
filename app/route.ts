@@ -72,18 +72,3 @@ export function matchRoutes(
 
   return null;
 }
-
-export function isValidPathname(pathname: string) {
-  return (
-    pathname.startsWith("/") &&
-    pathname.endsWith("/") &&
-    !pathname.includes("//")
-  );
-}
-
-export function fixPathname(pathname: string) {
-  while (pathname.includes("//")) pathname = pathname.replaceAll("//", "/");
-  if (!pathname.startsWith("/")) pathname = "/" + pathname;
-  if (!pathname.endsWith("/")) pathname = pathname + "/";
-  return pathname;
-}

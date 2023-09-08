@@ -109,3 +109,19 @@ export function filenameMatches(filename: string, target: string) {
     isJavaScriptFile(filename.slice(target.length))
   );
 }
+
+export function resolveDependencies(
+  buildGraph: Map<BuiltFile, BuiltFile[]>,
+  entries: BuiltFile[],
+) {
+  const set = new Set<string>();
+  while (entries.length > 0) {
+    const entry = entries.pop()!;
+    if (!set.has(entry)) {
+      set.add(entry);
+      const deps = buildGraph.get(entry)!;
+      entries.push(...deps);
+    }
+  }
+  return Array.from(set);
+}

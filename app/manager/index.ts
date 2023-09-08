@@ -1,4 +1,4 @@
-import { createContext, useContext } from "../../deps.ts";
+import { createContext, FunctionComponent, useContext } from "../../deps.ts";
 import { BuiltFile, ComponentReference, LoaderReference } from "../utils.ts";
 
 export interface Manager {
@@ -8,6 +8,8 @@ export interface Manager {
   basePath: string;
   buildGraph: Map<BuiltFile, BuiltFile[]>;
   imports: Map<ComponentReference, BuiltFile>;
+  renderTree: ComponentReference[];
+  components: Map<ComponentReference, FunctionComponent>;
 }
 
 export type SerializedManager = {
@@ -17,6 +19,7 @@ export type SerializedManager = {
   basePath: string;
   buildGraph: [BuiltFile, BuiltFile[]][];
   imports: [ComponentReference, BuiltFile][];
+  renderTree: ComponentReference[];
 };
 
 export const ManagerContext = createContext<Manager | null>(null);
