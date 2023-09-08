@@ -52,5 +52,5 @@ export function deserializeManager(serialized: string) {
     basePath: manager.basePath,
     entryPath: manager.entryPath,
     renderTree: manager.renderTree,
-  } as Manager;
+  } satisfies Manager;
 }

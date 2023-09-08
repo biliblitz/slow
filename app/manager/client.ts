@@ -11,7 +11,7 @@ export function createClientManager() {
  *
  * Client only. Server does not need this.
  */
-export async function loadComponents(
+export async function importComponents(
   manager: Manager,
   componentRefs: ComponentReference[],
 ) {
