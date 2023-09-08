@@ -62,17 +62,14 @@ async function buildClientAssets(
 
   // "build/s-XXXXXXXX.js" => "import ..."
   const buildAssets = new Map(
-    Object.keys(result.metafile.outputs).map((
-      file,
-    ) => [file, filePathToContents.get(resolve(file))!]),
+    Object.keys(result.metafile.outputs)
+      .map((file) => [file, filePathToContents.get(resolve(file))!]),
   );
 
   // "build/s-XXXXXXXX.js" => ["build/s-YYYYYYYY.js", "build/s-ZZZZZZZZ.js"]
   const buildGraph = new Map<string, string[]>(
-    Object.entries(result.metafile.outputs).map(([key, value]) => [
-      key,
-      value.imports.map(({ path }) => path),
-    ]),
+    Object.entries(result.metafile.outputs)
+      .map(([key, value]) => [key, value.imports.map(({ path }) => path)]),
   );
 
   /** "/path/to/entry/point.tsx" => "build/s-XXXXXXXX.js" */
@@ -111,7 +108,7 @@ export async function build(workingDir = "./app") {
   }[] = [];
 
   async function registerLoader(filePath: string): Promise<LoaderReference[]> {
-    const loaders = (await import(filePath)) as Record<string, Loader<{}>>;
+    const loaders = (await import(filePath)) as Record<string, Loader>;
     const exports = await Promise.all(
       Object.entries(loaders).map(async ([funcname, loader]) => {
         const ref = await hash(`loader:file://${filePath}#${funcname}`);
@@ -129,9 +126,9 @@ export async function build(workingDir = "./app") {
     const exports = await Promise.all(
       Object.entries(actions).map(async ([funcname, action]) => {
         const ref = await hash(`action:file://${filePath}#${funcname}`);
-        action.ref = ref;
+        action.__ref = ref;
         dictionary.action.set(ref, action);
-        return { ref, funcname, method: action.method };
+        return { ref, funcname, method: action.__method };
       }),
     );
     actionPaths.push({ filePath, exports });
@@ -232,9 +229,12 @@ export async function build(workingDir = "./app") {
         return [filePath, contents] as const;
       }),
       ...actionPaths.map(({ filePath, exports }) => {
-        const contents = exports.map(({ funcname, ref, method }) => {
-          return `export const ${funcname} = { ref: "${ref}", method: "${method}" };`;
-        }).join("\n");
+        const contents = [
+          'import { useAction } from "slow";',
+          ...exports.map(({ funcname, ref, method }) => {
+            return `export const ${funcname} = () => useAction("${ref}", "${method}");`;
+          }),
+        ].join("\n");
         return [filePath, contents] as const;
       }),
     ],

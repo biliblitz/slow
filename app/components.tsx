@@ -1,4 +1,4 @@
-import { useManager } from "./manager/index.ts";
+import { serializeManager, useManager } from "./manager/index.ts";
 import { createContext, JSX as JSXInternal, useContext } from "../deps.ts";
 import { ComponentReference, resolveDependencies } from "./utils.ts";
 
@@ -8,32 +8,14 @@ export function SlowCityProvider(
   return <html {...props} />;
 }
 
-function ManagerStorage() {
+function ManagerSerializer() {
   const manager = useManager();
-
-  const loaders = Array.from(manager.loaders);
-  const actions = Array.from(manager.actions);
-  const basePath = manager.basePath;
-  const entryPath = manager.entryPath;
-  const imports = Array.from(manager.imports);
-  const buildGraph = Array.from(manager.buildGraph);
-  const renderTree = manager.renderTree;
 
   return (
     <script
       type="application/json"
       data-slow="manager"
-      dangerouslySetInnerHTML={{
-        __html: JSON.stringify({
-          loaders,
-          actions,
-          basePath,
-          entryPath,
-          imports,
-          buildGraph,
-          renderTree,
-        }).replaceAll("/", "\\/"),
-      }}
+      dangerouslySetInnerHTML={{ __html: serializeManager(manager) }}
     />
   );
 }
@@ -70,13 +52,12 @@ export function RouterOutlet() {
   return (
     <OutletContext.Provider value={manager.renderTree}>
       <Outlet />
-      <ManagerStorage />
+      <ManagerSerializer />
       <script type="module" src={manager.basePath + manager.entryPath}></script>
     </OutletContext.Provider>
   );
 }
 
-// TODO
 export function Outlet() {
   const manager = useManager();
   const outlets = useContext(OutletContext);

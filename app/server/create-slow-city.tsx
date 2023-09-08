@@ -76,11 +76,11 @@ export function createSlowCity(root: VNode, project: Project) {
 
         // check if method is allowed
         const action = project.dictionary.action.get(actionRef)!;
-        if (req.method !== action.method) {
+        if (req.method !== action.__method) {
           // TODO: render 405 page if not fetch data (?)
           return new Response(null, {
             status: 405,
-            headers: { allow: action.method },
+            headers: { allow: action.__method },
           });
         }
 
@@ -93,7 +93,7 @@ export function createSlowCity(root: VNode, project: Project) {
             await middleware(req);
           }
           if (route.module.actions.includes(actionRef)) {
-            actionResults.push([actionRef, await action.func(req)]);
+            actionResults.push([actionRef, await action.__func(req)]);
             break;
           }
         }

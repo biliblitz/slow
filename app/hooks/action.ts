@@ -1,26 +1,38 @@
-export type ActionResponse<T> = T | Promise<T>;
-export type ActionFunction<T> = (req: Request) => ActionResponse<T>;
+// deno-lint-ignore-file no-explicit-any
+import { useAction } from "./use-action.ts";
+
+export type ActionReturn<T> = T | Promise<T>;
+export type ActionFunction<T> = (req: Request) => ActionReturn<T>;
 export type ActionResult<R> = {
   data?: R | null;
 };
-export type Action<T = {}> = {
-  ref: string;
-  method: string;
-  func: ActionFunction<T>;
-};
-
-export function action$<T = {}>(action: ActionFunction<T>): Action<T> {
-  return { ref: "", method: "POST", func: action };
+export type ActionResponse<T> = T;
+export interface Action<T = any> {
+  (): ActionResponse<T>;
+  __ref: string;
+  __method: string;
+  __func: ActionFunction<T>;
 }
 
-export function delete$<T = {}>(action: ActionFunction<T>): Action<T> {
-  return { ref: "", method: "DELETE", func: action };
+export function action$<T>(
+  actionFn: ActionFunction<T>,
+  method = "POST",
+): Action<T> {
+  const action = () => useAction(action.__ref) as ActionResponse<T>;
+  action.__ref = "";
+  action.__method = method;
+  action.__func = actionFn;
+  return action;
 }
 
-export function put$<T = {}>(action: ActionFunction<T>): Action<T> {
-  return { ref: "", method: "PUT", func: action };
+export function delete$<T>(action: ActionFunction<T>): Action<T> {
+  return action$(action, "DELETE");
 }
 
-export function patch$<T = {}>(action: ActionFunction<T>): Action<T> {
-  return { ref: "", method: "PATCH", func: action };
+export function put$<T>(action: ActionFunction<T>): Action<T> {
+  return action$(action, "PUT");
+}
+
+export function patch$<T>(action: ActionFunction<T>): Action<T> {
+  return action$(action, "PATCH");
 }

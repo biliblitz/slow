@@ -1,3 +1,5 @@
+// deno-lint-ignore-file no-explicit-any
+
 import { FunctionComponent } from "../deps.ts";
 import { Action } from "./hooks/action.ts";
 import { Loader } from "./hooks/loader.ts";
@@ -39,7 +41,7 @@ export type Module = {
 };
 
 export type Dictionary = {
-  action: Map<ActionReference, Action>;
+  action: Map<ActionReference, Action<any>>;
   loader: Map<LoaderReference, Loader<any>>;
   components: Map<ComponentReference, FunctionComponent>;
   componentPaths: Map<ComponentReference, string>;
