@@ -49,6 +49,13 @@ export type Dictionary = {
   middlewares: Map<MiddlewareReference, Middleware>;
 };
 
+export type ServerDataResponse = {
+  ok: "data";
+  loaders: [LoaderReference, any][];
+  actions: [ActionReference, any][];
+  renderTree: ComponentReference[];
+};
+
 export function createModule(): Module {
   return {
     index: null,

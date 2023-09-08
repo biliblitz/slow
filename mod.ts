@@ -3,6 +3,16 @@ export { loader$ } from "./app/hooks/loader.ts";
 export { middleware$ } from "./app/hooks/middleware.ts";
 
 export {
+  Link,
+  Outlet,
+  RouterHead,
+  RouterOutlet,
+  SlowCityProvider,
+} from "./app/components.tsx";
+
+export { hydrate } from "./app/hydrate.tsx";
+
+export {
   /**
    * @internal
    * @deprecated internal function, do not use
@@ -16,12 +26,3 @@ export {
    */
   useAction,
 } from "./app/hooks/use-action.ts";
-
-export {
-  Outlet,
-  RouterHead,
-  RouterOutlet,
-  SlowCityProvider,
-} from "./app/components.tsx";
-
-export { hydrate } from "./app/hydrate.tsx";

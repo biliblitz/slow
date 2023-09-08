@@ -5,4 +5,9 @@ export type {
   JSX,
   VNode,
 } from "https://esm.sh/preact@10.17.1";
-export { useContext } from "https://esm.sh/preact@10.17.1/hooks";
+export {
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "https://esm.sh/preact@10.17.1/hooks";
