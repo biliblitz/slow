@@ -56,6 +56,9 @@ export type ServerDataResponse = {
   loaders: [LoaderReference, any][];
   actions: [ActionReference, any][];
   renderTree: ComponentReference[];
+} | {
+  ok: "redirect";
+  redirect: string;
 };
 
 export function createModule(): Module {

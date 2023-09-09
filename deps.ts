@@ -1,15 +1,12 @@
 // === SHARE ===
-export { createContext, render } from "https://esm.sh/preact@10.17.1";
-export type {
-  ComponentChildren,
-  FunctionComponent,
-  JSX,
-  VNode,
-} from "https://esm.sh/preact@10.17.1";
+export { createContext, render } from "preact";
+export type { ComponentChildren, FunctionComponent, JSX, VNode } from "preact";
 export {
   useCallback,
   useContext,
   useEffect,
   useMemo,
   useState,
-} from "https://esm.sh/preact@10.17.1/hooks";
+} from "preact/hooks";
+export { useComputed, useSignal, useSignalEffect } from "@preact/signals";
+export type { ReadonlySignal, Signal } from "@preact/signals";

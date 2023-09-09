@@ -13,14 +13,8 @@ export {
 export { hydrate } from "./app/hydrate.tsx";
 
 export {
-  /**
-   * @internal
-   * @deprecated internal function, do not use
-   */
   useAction,
-  /**
-   * @internal
-   * @deprecated internal function, do not use
-   */
+  useCatchAllParam,
   useLoader,
+  useParam,
 } from "./app/hooks/mod.ts";
