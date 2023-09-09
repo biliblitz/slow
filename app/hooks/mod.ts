@@ -1,5 +1,7 @@
-import { useComputed } from "../../deps.ts";
+// deno-lint-ignore-file no-explicit-any
+import { useComputed, useSignal } from "../../deps.ts";
 import { useRouter } from "../components/router.tsx";
+import { ActionState } from "./action.ts";
 
 export type RequestEvent = {
   /**
@@ -23,7 +25,9 @@ export function useLoader(ref: string) {
 
 export function useAction(ref: string) {
   const router = useRouter();
-  return useComputed(() => router.actions.value.get(ref) || null);
+  const data = useComputed(() => router.actions.value.get(ref) || null);
+  const isRunning = useSignal(false);
+  return { isRunning, data, ref } satisfies ActionState<any>;
 }
 
 export function useParam(param: string) {

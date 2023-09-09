@@ -100,11 +100,11 @@ export function createSlowCity(root: VNode, project: Project) {
 
         // check if method is allowed
         const action = project.dictionary.action.get(actionRef)!;
-        if (req.method !== action.__method) {
+        if (req.method !== "POST") {
           // TODO: render 405 page if not fetch data (?)
           return new Response(null, {
             status: 405,
-            headers: { allow: action.__method },
+            headers: { allow: "POST" },
           });
         }
 

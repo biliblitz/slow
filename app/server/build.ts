@@ -113,7 +113,7 @@ export async function build(workingDir = "./app") {
   }[] = [];
   const actionPaths: {
     filePath: string;
-    exports: { funcname: string; method: string; ref: string }[];
+    exports: { funcname: string; ref: string }[];
   }[] = [];
 
   async function registerLoader(filePath: string): Promise<LoaderReference[]> {
@@ -139,7 +139,7 @@ export async function build(workingDir = "./app") {
         const ref = await hash(`action:${fileUrl}#${funcname}`);
         action.__ref = ref;
         dictionary.action.set(ref, action);
-        return { ref, funcname, method: action.__method };
+        return { ref, funcname };
       }),
     );
     actionPaths.push({ filePath, exports });
@@ -244,8 +244,8 @@ export async function build(workingDir = "./app") {
       ...actionPaths.map(({ filePath, exports }) => {
         const contents = [
           'import { __internals } from "slow";',
-          ...exports.map(({ funcname, ref, method }) => {
-            return `export const ${funcname} = () => __internals.useAction("${ref}", "${method}");`;
+          ...exports.map(({ funcname, ref }) => {
+            return `export const ${funcname} = () => __internals.useAction("${ref}");`;
           }),
         ].join("\n");
         return [filePath, contents] as const;

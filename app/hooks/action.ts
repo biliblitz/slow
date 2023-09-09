@@ -1,41 +1,25 @@
 // deno-lint-ignore-file no-explicit-any
+import { ReadonlySignal } from "../../deps.ts";
 import { RequestEvent, useAction } from "./mod.ts";
 
 export type ActionReturn<T> = T | Promise<T>;
 export type ActionFunction<T> = (event: RequestEvent) => ActionReturn<T>;
-export type ActionResult<R> = {
-  data?: R | null;
+
+export type ActionState<T> = {
+  readonly data: ReadonlySignal<T | null>;
+  readonly isRunning: ReadonlySignal<boolean>;
+  readonly ref: string;
 };
-export type ActionResponse<T> = T;
+
 export interface Action<T = any> {
-  (): ActionResponse<T>;
+  (): ActionState<T>;
   __ref: string;
-  __method: string;
   __func: ActionFunction<T>;
 }
 
-export function action$<T>(
-  actionFn: ActionFunction<T>,
-  method = "POST",
-): Action<T> {
-  const action = () => useAction(action.__ref) as ActionResponse<T>;
+export function action$<T>(actionFn: ActionFunction<T>): Action<T> {
+  const action = () => useAction(action.__ref) as ActionState<T>;
   action.__ref = "";
-  action.__method = method;
   action.__func = actionFn;
   return action;
-}
-
-/**
- * Tips. body will be ignored for DELETE method requests.
- */
-export function delete$<T>(action: ActionFunction<T>): Action<T> {
-  return action$(action, "DELETE");
-}
-
-export function put$<T>(action: ActionFunction<T>): Action<T> {
-  return action$(action, "PUT");
-}
-
-export function patch$<T>(action: ActionFunction<T>): Action<T> {
-  return action$(action, "PATCH");
 }

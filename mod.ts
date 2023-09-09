@@ -2,6 +2,7 @@ export { action$ } from "./app/hooks/action.ts";
 export { loader$ } from "./app/hooks/loader.ts";
 export { middleware$ } from "./app/hooks/middleware.ts";
 export {
+  Form,
   Link,
   Outlet,
   RouterHead,
