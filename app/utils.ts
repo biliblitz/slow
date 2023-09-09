@@ -44,9 +44,11 @@ export type Dictionary = {
   action: Map<ActionReference, Action<any>>;
   loader: Map<LoaderReference, Loader<any>>;
   components: Map<ComponentReference, FunctionComponent>;
-  componentPaths: Map<ComponentReference, string>;
-  componentImports: Map<ComponentReference, BuiltFile>;
   middlewares: Map<MiddlewareReference, Middleware>;
+  /** "cccccccc" => "file:///project/component.tsx" */
+  componentUrls: Map<ComponentReference, string>;
+  /** "cccccccc" => "build/s-XXXXXXXX.js" */
+  componentImports: Map<ComponentReference, BuiltFile>;
 };
 
 export type ServerDataResponse = {

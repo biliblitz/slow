@@ -1,5 +1,11 @@
 import { FunctionComponent } from "../../deps.ts";
-import { denoPlugins, esbuild, join, resolve } from "../../server-deps.ts";
+import {
+  denoPlugins,
+  esbuild,
+  join,
+  resolve,
+  toFileUrl,
+} from "../../server-deps.ts";
 
 import { Action } from "../hooks/action.ts";
 import { Loader } from "../hooks/loader.ts";
@@ -55,28 +61,31 @@ async function buildClientAssets(
     // sourcemap: true,
   });
 
-  // "/project/build/s-XXXXXXXX.js" => "import ..."
+  // "file:///project/build/s-XXXXXXXX.js" => "import ..."
   const filePathToContents = new Map(result.outputFiles.map((file) => {
-    return [file.path, file.contents];
+    return [toFileUrl(file.path).href, file.contents];
   }));
 
   // "build/s-XXXXXXXX.js" => "import ..."
   const buildAssets = new Map(
     Object.keys(result.metafile.outputs)
-      .map((file) => [file, filePathToContents.get(resolve(file))!]),
+      .map((file) => {
+        const fileUrl = toFileUrl(resolve(file)).href;
+        return [file, filePathToContents.get(fileUrl)!];
+      }),
   );
 
   // "build/s-XXXXXXXX.js" => ["build/s-YYYYYYYY.js", "build/s-ZZZZZZZZ.js"]
-  const buildGraph = new Map<string, string[]>(
+  const buildGraph = new Map(
     Object.entries(result.metafile.outputs)
       .map(([key, value]) => [key, value.imports.map(({ path }) => path)]),
   );
 
-  /** "/path/to/entry/point.tsx" => "build/s-XXXXXXXX.js" */
+  /** "file:///path/to/entry/point.tsx" => "build/s-XXXXXXXX.js" */
   const buildEntries = new Map(
     Object.entries(result.metafile.outputs)
       .filter(([_, value]) => value.entryPoint)
-      .map(([key, value]) => [resolve(value.entryPoint!), key] as const),
+      .map(([key, value]) => [toFileUrl(resolve(value.entryPoint!)).href, key]),
   );
 
   return {
@@ -94,7 +103,7 @@ export async function build(workingDir = "./app") {
     action: new Map(),
     components: new Map(),
     middlewares: new Map(),
-    componentPaths: new Map(),
+    componentUrls: new Map(),
     componentImports: new Map(),
   };
 
@@ -108,10 +117,11 @@ export async function build(workingDir = "./app") {
   }[] = [];
 
   async function registerLoader(filePath: string): Promise<LoaderReference[]> {
-    const loaders = (await import(filePath)) as Record<string, Loader>;
+    const fileUrl = toFileUrl(filePath).href;
+    const loaders = (await import(fileUrl)) as Record<string, Loader>;
     const exports = await Promise.all(
       Object.entries(loaders).map(async ([funcname, loader]) => {
-        const ref = await hash(`loader:file://${filePath}#${funcname}`);
+        const ref = await hash(`loader:${fileUrl}#${funcname}`);
         loader.__ref = ref;
         dictionary.loader.set(ref, loader);
         return { ref, funcname };
@@ -122,10 +132,11 @@ export async function build(workingDir = "./app") {
   }
 
   async function registerAction(filePath: string): Promise<ActionReference[]> {
-    const actions = (await import(filePath)) as Record<string, Action>;
+    const fileUrl = toFileUrl(filePath).href;
+    const actions = (await import(fileUrl)) as Record<string, Action>;
     const exports = await Promise.all(
       Object.entries(actions).map(async ([funcname, action]) => {
-        const ref = await hash(`action:file://${filePath}#${funcname}`);
+        const ref = await hash(`action:${fileUrl}#${funcname}`);
         action.__ref = ref;
         dictionary.action.set(ref, action);
         return { ref, funcname, method: action.__method };
@@ -138,24 +149,26 @@ export async function build(workingDir = "./app") {
   async function registerComponent(
     filePath: string,
   ): Promise<ComponentReference> {
-    const component = (await import(filePath)).default as FunctionComponent;
+    const fileUrl = toFileUrl(filePath).href;
+    const component = (await import(fileUrl)).default as FunctionComponent;
     if (!component) {
       throw new Error("Index/Layout must export a default component");
     }
-    const nick = await hash(`component:file://${filePath}#default`);
+    const nick = await hash(`component:${fileUrl}#default`);
     dictionary.components.set(nick, component);
-    dictionary.componentPaths.set(nick, filePath);
+    dictionary.componentUrls.set(nick, fileUrl);
     return nick;
   }
 
   async function registerMiddleware(
     filePath: string,
   ): Promise<MiddlewareReference> {
-    const middleware = (await import(filePath)).default as Middleware;
+    const fileUrl = toFileUrl(filePath).href;
+    const middleware = (await import(fileUrl)).default as Middleware;
     if (!middleware) {
       throw new Error("Middleware must be exported as default");
     }
-    const nick = await hash(`middleware:file://${filePath}#default`);
+    const nick = await hash(`middleware:${fileUrl}#default`);
     dictionary.middlewares.set(nick, middleware);
     return nick;
   }
@@ -173,7 +186,7 @@ export async function build(workingDir = "./app") {
     }
 
     for (const filename of files) {
-      const filePath = `${directory}/${filename}`;
+      const filePath = join(directory, filename);
       if (filenameMatches(filename, "index")) {
         if (module.index) throw new Error("Multiple index found");
         module.index = await registerComponent(filePath);
@@ -211,9 +224,9 @@ export async function build(workingDir = "./app") {
   // === analyze entry points ===
   const entryPoints = [
     // add client entrance
-    join(workingDir, "entry.client.tsx"),
+    toFileUrl(join(workingDir, "entry.client.tsx")).href,
     // components
-    ...dictionary.componentPaths.values(),
+    ...dictionary.componentUrls.values(),
   ];
 
   // generate replacements for import loader/action in esbuild
@@ -250,8 +263,8 @@ export async function build(workingDir = "./app") {
     ],
   );
 
-  for (const [hash, importPath] of dictionary.componentPaths.entries()) {
-    const buildPath = buildEntries.get(importPath)!;
+  for (const [hash, importUrl] of dictionary.componentUrls.entries()) {
+    const buildPath = buildEntries.get(importUrl)!;
     dictionary.componentImports.set(hash, buildPath);
   }
   const entrance = buildEntries.get(entryPoints[0])!;
