@@ -1,8 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
-import { useAction } from "./use-action.ts";
+import { RequestEvent, useAction } from "./mod.ts";
 
 export type ActionReturn<T> = T | Promise<T>;
-export type ActionFunction<T> = (req: Request) => ActionReturn<T>;
+export type ActionFunction<T> = (event: RequestEvent) => ActionReturn<T>;
 export type ActionResult<R> = {
   data?: R | null;
 };

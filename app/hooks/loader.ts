@@ -1,8 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
-import { useLoader } from "./use-loader.ts";
+import { RequestEvent, useLoader } from "./mod.ts";
 
 export type LoaderReturn<T> = T | Promise<T>;
-export type LoaderFunction<T> = (req: Request) => LoaderReturn<T>;
+export type LoaderFunction<T> = (event: RequestEvent) => LoaderReturn<T>;
 export type LoaderResponse<T> = T;
 
 export interface Loader<T = any> {

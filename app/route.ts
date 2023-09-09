@@ -56,10 +56,8 @@ export function matchRoutes(
           break;
         }
         case RoutePathType.CATCH: {
-          result.unshift({
-            module,
-            param: ["$", pathname],
-          });
+          result.unshift({ module: route.module });
+          result.unshift({ module, param: ["$", pathname] });
           return true;
         }
       }

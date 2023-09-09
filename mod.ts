@@ -17,12 +17,10 @@ export {
    * @internal
    * @deprecated internal function, do not use
    */
-  useLoader,
-} from "./app/hooks/use-loader.ts";
-export {
+  useAction,
   /**
    * @internal
    * @deprecated internal function, do not use
    */
-  useAction,
-} from "./app/hooks/use-action.ts";
+  useLoader,
+} from "./app/hooks/mod.ts";
