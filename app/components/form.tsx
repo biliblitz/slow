@@ -12,6 +12,10 @@ export function Form<T>(props: FormProps<T>) {
     <form
       action={`?saction=${props.action.ref}`}
       method="POST"
+      onSubmit={(e) => {
+        e.preventDefault();
+        action.submit(new FormData(e.currentTarget));
+      }}
       {...remains}
     />
   );

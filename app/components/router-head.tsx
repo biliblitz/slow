@@ -9,7 +9,7 @@ function Preloads() {
 
   const deps = useComputed(() => {
     return resolveDependencies(
-      manifest.buildGraph,
+      manifest.graph,
       router.preloads.value
         .map((ref) => manifest.imports.get(ref)!)
         .concat(manifest.entryPath),

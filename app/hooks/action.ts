@@ -9,6 +9,7 @@ export type ActionState<T> = {
   readonly data: ReadonlySignal<T | null>;
   readonly isRunning: ReadonlySignal<boolean>;
   readonly ref: string;
+  submit(formData: FormData): Promise<void>;
 };
 
 export interface Action<T = any> {

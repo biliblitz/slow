@@ -68,7 +68,8 @@ export function createSlowCity(root: VNode, project: Project) {
       // In this case, `isFetchData` will always be false
       // We modify url to preserve searchParams, etc.
       url.pathname = pathname;
-      return Response.redirect(url);
+      // make a permanently redirect response
+      return Response.redirect(url, 301);
     }
 
     // get all params
@@ -86,34 +87,32 @@ export function createSlowCity(root: VNode, project: Project) {
     };
 
     try {
-      const actionRef = url.searchParams.get("saction");
+      // Reject all non-POST and non-GET requests
+      if (req.method !== "POST" && req.method !== "GET") {
+        return new Response(null, {
+          status: 405,
+          headers: { allow: "GET, POST" },
+        });
+      }
 
       // === handle action ===
-      if (actionRef) {
-        // if action does not exist in routes
-        if (
-          !routes.some(({ module }) => module.actions.includes(actionRef))
-        ) {
-          // TODO: render 404 page if not fetch data
-          return new Response(null, { status: 404 });
+      // if actions exists and method is POST then we try to execute it.
+      if (req.method === "POST") {
+        const actionRef = url.searchParams.get("saction");
+        const hasAction = actionRef &&
+          routes.some(({ module }) => module.actions.includes(actionRef));
+
+        // render 405 page if actions does not exist
+        if (!hasAction) {
+          return new Response(null, { status: 405, headers: { allow: "GET" } });
         }
 
-        // check if method is allowed
         const action = project.dictionary.action.get(actionRef)!;
-        if (req.method !== "POST") {
-          // TODO: render 405 page if not fetch data (?)
-          return new Response(null, {
-            status: 405,
-            headers: { allow: "POST" },
-          });
-        }
-
         // run action
         for (const route of routes) {
           if (route.module.middleware) {
-            const middleware = project.dictionary.middlewares.get(
-              route.module.middleware,
-            )!;
+            const middleware = project.dictionary.middlewares
+              .get(route.module.middleware)!;
             await middleware(event);
           }
           if (route.module.actions.includes(actionRef)) {
@@ -124,19 +123,12 @@ export function createSlowCity(root: VNode, project: Project) {
       }
 
       // === handle loaders ===
-      // if without action the method must be GET
-      if (!actionRef && req.method !== "GET") {
-        // TODO: render 405 page if not fetch data (?)
-        return new Response(null, { status: 405, headers: { allow: "GET" } });
-      }
-
       // run loaders
       for (const route of routes) {
         // apply middleware
         if (route.module.middleware) {
-          const middleware = project.dictionary.middlewares.get(
-            route.module.middleware,
-          )!;
+          const middleware = project.dictionary.middlewares
+            .get(route.module.middleware)!;
           await middleware(event);
         }
         // run all loader parallel
@@ -154,11 +146,13 @@ export function createSlowCity(root: VNode, project: Project) {
 
       // If throw Response, we just return it as is.
       if (e instanceof Response) {
+        // TODO: pass existing header?
         return e;
       }
       // If throw URL, we return redirect data or redirect directly.
       if (e instanceof URL) {
         if (isFetchData) {
+          // we make client to redirect
           return Response.json(
             { ok: "redirect", redirect: e.href } satisfies ServerDataResponse,
             { headers: event.headers },
@@ -188,23 +182,20 @@ export function createSlowCity(root: VNode, project: Project) {
       return Response.json(
         {
           ok: "data",
-          actions,
-          loaders,
-          outlets,
-          params,
+          data: { actions, loaders, outlets, params },
         } satisfies ServerDataResponse,
         { headers: event.headers },
       );
     }
 
     const manifest = createServerManifest({
+      graph: project.buildGraph,
       params,
       outlets,
       actions,
       loaders,
       imports: project.dictionary.componentImports,
       entrance: project.entrance,
-      buildGraph: project.buildGraph,
       components: project.dictionary.components,
     });
 

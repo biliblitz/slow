@@ -4,6 +4,7 @@ import { FunctionComponent } from "../deps.ts";
 import { Action } from "./hooks/action.ts";
 import { Loader } from "./hooks/loader.ts";
 import { Middleware } from "./hooks/middleware.ts";
+import { PageData } from "./manifest/index.ts";
 
 export type ActionReference = string;
 export type LoaderReference = string;
@@ -53,10 +54,7 @@ export type Dictionary = {
 
 export type ServerDataResponse = {
   ok: "data";
-  params: [string, string][];
-  loaders: [LoaderReference, any][];
-  actions: [ActionReference, any][];
-  outlets: ComponentReference[];
+  data: PageData;
 } | {
   ok: "redirect";
   redirect: string;

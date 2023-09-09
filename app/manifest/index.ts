@@ -7,23 +7,25 @@ import {
   LoaderReference,
 } from "../utils.ts";
 
+export type PageData = {
+  loaders: [LoaderReference, any][];
+  actions: [ActionReference, any][];
+  outlets: ComponentReference[];
+  params: [string, string][];
+};
+
 export type Manifest = {
   /** entrance of the entire website, `"build/s-XXXXXXXX.js"` */
   entryPath: BuiltFile;
   /** Where the website hosts, default to `/` */
   basePath: string;
   /** `"build/s-XXXXXXXX.js" => ["build/s-YYYYYYYY.js", "build/s-ZZZZZZZZ.js"]` */
-  buildGraph: Map<BuiltFile, BuiltFile[]>;
+  graph: Map<BuiltFile, BuiltFile[]>;
   /** `"cccccccc" => "build/s-XXXXXXXX.js"` */
   imports: Map<ComponentReference, BuiltFile>;
   /** `"cccccccc" => <Component />` */
   components: Map<ComponentReference, FunctionComponent>;
-
-  loaders: [LoaderReference, any][];
-  actions: [ActionReference, any][];
-  params: [string, string][];
-  outlets: ComponentReference[];
-};
+} & PageData;
 
 export const ManifestContext = createContext<Manifest | null>(null);
 
@@ -36,29 +38,46 @@ export function useManifest() {
 }
 
 export function serializeManifest(manifest: Manifest) {
+  const map = Array.from(manifest.graph.keys());
+  const reverseMap = new Map(Array.from(map.entries()).map(([a, b]) => [b, a]));
+  const encode = (file: string) => reverseMap.get(file)!;
+  const imports = Array.from(manifest.imports)
+    .map(([ref, file]) => [ref, encode(file)]);
+  const graph = Array.from(manifest.graph)
+    .map(([file, deps]) => [encode(file), deps.map(encode)]);
+
   return JSON.stringify({
-    imports: Array.from(manifest.imports),
-    buildGraph: Array.from(manifest.buildGraph),
+    map: map.map((file) => file.slice(8, -3)),
+    graph,
+    imports,
     params: manifest.params,
     loaders: manifest.loaders,
     actions: manifest.actions,
     outlets: manifest.outlets,
     basePath: manifest.basePath,
-    entryPath: manifest.entryPath,
+    entryPath: encode(manifest.entryPath),
   }).replaceAll("/", "\\/");
 }
 
 export function deserializeManifest(serialized: string) {
   const manifest = JSON.parse(serialized);
+  const map = (manifest.map as string[]).map((file) => `build/s-${file}.js`);
+  const decode = (id: number) => map[id];
+
+  const imports = new Map((manifest.imports as [string, number][])
+    .map(([ref, id]) => [ref, decode(id)]));
+  const graph = new Map((manifest.graph as [number, number[]][])
+    .map(([file, deps]) => [decode(file), deps.map(decode)]));
+
   return {
-    imports: new Map(manifest.imports),
-    buildGraph: new Map(manifest.buildGraph),
+    imports,
+    graph: graph,
     components: new Map(),
     params: manifest.params,
     loaders: manifest.loaders,
     actions: manifest.actions,
     outlets: manifest.outlets,
     basePath: manifest.basePath,
-    entryPath: manifest.entryPath,
+    entryPath: decode(manifest.entryPath),
   } satisfies Manifest;
 }
