@@ -12,13 +12,14 @@ import { importComponents } from "../manager/client.ts";
 import { useManager } from "../manager/index.ts";
 import { ComponentReference, ServerDataResponse } from "../utils.ts";
 
+type Navigate = (href: string) => Promise<void>;
 type Router = {
   params: ReadonlySignal<ReadonlyMap<string, string>>;
   loaders: ReadonlySignal<ReadonlyMap<string, any>>;
   actions: ReadonlySignal<ReadonlyMap<string, any>>;
   outlets: ReadonlySignal<ComponentReference[]>;
   preloads: ReadonlySignal<ComponentReference[]>;
-  navigate(href: string): Promise<void>;
+  navigate: Navigate;
 };
 
 const RouterContext = createContext<Router | null>(null);
@@ -109,4 +110,8 @@ export function useRouter() {
     throw new Error("Please nest your project inside <SlowCityProvider />");
   }
   return router;
+}
+
+export function useNavigate() {
+  return useRouter().navigate;
 }
