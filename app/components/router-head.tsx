@@ -3,7 +3,7 @@ import { useManager } from "../manager/index.ts";
 import { resolveDependencies } from "../utils.ts";
 import { useRouter } from "./router.tsx";
 
-export function RouterHead() {
+function Preloads() {
   const manager = useManager();
   const router = useRouter();
 
@@ -18,10 +18,19 @@ export function RouterHead() {
 
   return (
     <>
-      <title>233</title>
       {deps.value.map((dep) => (
         <link key={dep} rel="modulepreload" href={manager.basePath + dep} />
       ))}
+    </>
+  );
+}
+
+export function RouterHead() {
+  return (
+    <>
+      <title>233</title>
+
+      <Preloads />
     </>
   );
 }
