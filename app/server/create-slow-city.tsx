@@ -14,7 +14,18 @@ import { createServerManager } from "../manager/server.ts";
 import { Project } from "./build.ts";
 import { RequestEvent } from "../hooks/mod.ts";
 
+const LOGO = `
+ ____  _                ____ _ _         
+/ ___|| | _____      __/ ___(_) |_ _   _ 
+\\___ \\| |/ _ \\ \\ /\\ / / |   | | __| | | |
+ ___) | | (_) \\ V  V /| |___| | |_| |_| |
+|____/|_|\\___/ \\_/\\_/  \\____|_|\\__|\\__, |
+                                   |___/ 
+`;
+
 export function createSlowCity(root: VNode, project: Project) {
+  console.log(LOGO);
+
   return async (req: Request) => {
     const url = new URL(req.url);
 
@@ -70,8 +81,8 @@ export function createSlowCity(root: VNode, project: Project) {
     const loaders: [LoaderReference, any][] = [];
     const event: RequestEvent = {
       req,
-      headers: new Headers(),
       params: new Map(params),
+      headers: new Headers(),
     };
 
     try {

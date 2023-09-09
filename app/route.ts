@@ -46,10 +46,12 @@ export function matchRoutes(
           if (pathname === "/") continue;
           // slash is the second position of '/'
           const slash = pathname.slice(1).indexOf("/") + 1;
+          const segment = pathname.slice(1, slash);
+          if (!segment) continue;
           if (searchRoute(route.module, pathname.slice(slash))) {
             result.unshift({
               module,
-              param: [route.path.value, pathname.slice(1, slash)],
+              param: [route.path.value, segment],
             });
             return true;
           }

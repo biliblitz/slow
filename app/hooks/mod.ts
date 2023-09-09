@@ -7,13 +7,13 @@ export type RequestEvent = {
    */
   readonly req: Request;
   /**
-   * Extra headers appended to Response if nobody throws Response
-   */
-  headers: Headers;
-  /**
    * Params arguments from URL.pathname
    */
   readonly params: ReadonlyMap<string, string>;
+  /**
+   * Extra headers appended to Response if nobody throws Response
+   */
+  headers: Headers;
 };
 
 export function useLoader(ref: string) {

@@ -234,18 +234,18 @@ export async function build(workingDir = "./app") {
     [
       ...loaderPaths.map(({ filePath, exports }) => {
         const contents = [
-          'import { useLoader } from "slow";',
+          'import { __internals } from "slow";',
           ...exports.map(({ funcname, ref }) => {
-            return `export const ${funcname} = () => useLoader("${ref}");`;
+            return `export const ${funcname} = () => __internals.useLoader("${ref}");`;
           }),
         ].join("\n");
         return [filePath, contents] as const;
       }),
       ...actionPaths.map(({ filePath, exports }) => {
         const contents = [
-          'import { useAction } from "slow";',
+          'import { __internals } from "slow";',
           ...exports.map(({ funcname, ref, method }) => {
-            return `export const ${funcname} = () => useAction("${ref}", "${method}");`;
+            return `export const ${funcname} = () => __internals.useAction("${ref}", "${method}");`;
           }),
         ].join("\n");
         return [filePath, contents] as const;
