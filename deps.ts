@@ -8,5 +8,10 @@ export {
   useMemo,
   useState,
 } from "preact/hooks";
-export { useComputed, useSignal, useSignalEffect } from "@preact/signals";
+export {
+  batch,
+  useComputed,
+  useSignal,
+  useSignalEffect,
+} from "@preact/signals";
 export type { ReadonlySignal, Signal } from "@preact/signals";

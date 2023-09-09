@@ -1,5 +1,5 @@
-import { useSignal } from "../../deps.ts";
-import { useManager } from "../manager/index.ts";
+import { useComputed } from "../../deps.ts";
+import { useRouter } from "../components/router.tsx";
 
 export type RequestEvent = {
   /**
@@ -17,17 +17,18 @@ export type RequestEvent = {
 };
 
 export function useLoader(ref: string) {
-  const manager = useManager();
-  return manager.loaders.get(ref);
+  const router = useRouter();
+  return useComputed(() => router.loaders.value.get(ref) || null);
 }
 
 export function useAction(ref: string) {
-  const manager = useManager();
-  return manager.actions.get(ref);
+  const router = useRouter();
+  return useComputed(() => router.actions.value.get(ref) || null);
 }
 
 export function useParam(param: string) {
-  const signal = useSignal(param);
+  const router = useRouter();
+  return useComputed(() => router.params.value.get(param) || "");
 }
 
 export function useCatchAllParam() {

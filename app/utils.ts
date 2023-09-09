@@ -53,9 +53,10 @@ export type Dictionary = {
 
 export type ServerDataResponse = {
   ok: "data";
+  params: [string, string][];
   loaders: [LoaderReference, any][];
   actions: [ActionReference, any][];
-  renderTree: ComponentReference[];
+  outlets: ComponentReference[];
 } | {
   ok: "redirect";
   redirect: string;

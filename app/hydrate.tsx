@@ -4,7 +4,7 @@ import { ManagerContext } from "./manager/index.ts";
 
 export async function hydrate(root: VNode) {
   const manager = createClientManager();
-  await importComponents(manager, manager.renderTree);
+  await importComponents(manager, manager.outlets);
 
   render(
     <ManagerContext.Provider value={manager}>

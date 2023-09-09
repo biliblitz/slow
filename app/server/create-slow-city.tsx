@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 import { extname, renderToString, typeByExtension } from "../../server-deps.ts";
 import { VNode } from "../../deps.ts";
 
@@ -5,6 +6,7 @@ import {
   ActionReference,
   ComponentReference,
   LoaderReference,
+  ServerDataResponse,
 } from "../utils.ts";
 import { matchRoutes } from "../route.ts";
 import { ManagerContext } from "../manager/index.ts";
@@ -58,17 +60,18 @@ export function createSlowCity(root: VNode, project: Project) {
       return Response.redirect(url);
     }
 
+    // get all params
+    const params = routes
+      .filter((route) => route.param)
+      .map((route) => route.param!);
+
     // now we start to run actions/loaders
-    const actionResults: (readonly [ActionReference, unknown])[] = [];
-    const loaderResults: (readonly [LoaderReference, unknown])[] = [];
+    const actions: [ActionReference, any][] = [];
+    const loaders: [LoaderReference, any][] = [];
     const event: RequestEvent = {
       req,
       headers: new Headers(),
-      params: new Map(
-        routes
-          .filter((route) => route.param)
-          .map((route) => route.param!),
-      ),
+      params: new Map(params),
     };
 
     try {
@@ -103,7 +106,7 @@ export function createSlowCity(root: VNode, project: Project) {
             await middleware(event);
           }
           if (route.module.actions.includes(actionRef)) {
-            actionResults.push([actionRef, await action.__func(event)]);
+            actions.push([actionRef, await action.__func(event)]);
             break;
           }
         }
@@ -130,10 +133,10 @@ export function createSlowCity(root: VNode, project: Project) {
           route.module.loaders.map(async (ref) => {
             const loader = project.dictionary.loader.get(ref)!;
             const result = await loader.__func(event);
-            return [ref, result] as const;
+            return [ref, result] as [string, any];
           }),
         );
-        loaderResults.push(...results);
+        loaders.push(...results);
       }
     } catch (e) {
       // === handle throws in middleware/action/loader ===
@@ -146,7 +149,7 @@ export function createSlowCity(root: VNode, project: Project) {
       if (e instanceof URL) {
         if (isFetchData) {
           return Response.json(
-            { ok: "redirect", redirect: e.href },
+            { ok: "redirect", redirect: e.href } satisfies ServerDataResponse,
             { headers: event.headers },
           );
         } else {
@@ -161,31 +164,36 @@ export function createSlowCity(root: VNode, project: Project) {
 
     // If loaders & actions are done, we can start render pages
     // Firstly, get all components we need to render
-    const renderTree: ComponentReference[] = [];
+    const outlets: ComponentReference[] = [];
     for (const route of routes) {
       if (route.module.layout) {
-        renderTree.push(route.module.layout);
+        outlets.push(route.module.layout);
       }
     }
-    renderTree.push(routes.at(-1)!.module.index!);
+    outlets.push(routes.at(-1)!.module.index!);
 
     // if just fetch data, we can return now
     if (isFetchData) {
-      return Response.json({
-        ok: "data",
-        actions: actionResults,
-        loaders: loaderResults,
-        renderTree,
-      }, { headers: event.headers });
+      return Response.json(
+        {
+          ok: "data",
+          actions,
+          loaders,
+          outlets,
+          params,
+        } satisfies ServerDataResponse,
+        { headers: event.headers },
+      );
     }
 
     const manager = createServerManager({
-      actions: new Map(actionResults),
-      loaders: new Map(loaderResults),
+      params,
+      outlets,
+      actions,
+      loaders,
       imports: project.dictionary.componentImports,
       entrance: project.entrance,
       buildGraph: project.buildGraph,
-      renderTree,
       components: project.dictionary.components,
     });
 

@@ -1,7 +1,10 @@
+// deno-lint-ignore-file no-explicit-any
 import {
+  batch,
   ComponentChildren,
   createContext,
   ReadonlySignal,
+  useComputed,
   useContext,
   useSignal,
 } from "../../deps.ts";
@@ -10,8 +13,11 @@ import { useManager } from "../manager/index.ts";
 import { ComponentReference, ServerDataResponse } from "../utils.ts";
 
 type Router = {
-  preloads: ReadonlySignal<ComponentReference[]>;
+  params: ReadonlySignal<ReadonlyMap<string, string>>;
+  loaders: ReadonlySignal<ReadonlyMap<string, any>>;
+  actions: ReadonlySignal<ReadonlyMap<string, any>>;
   outlets: ReadonlySignal<ComponentReference[]>;
+  preloads: ReadonlySignal<ComponentReference[]>;
   navigate(href: string): Promise<void>;
 };
 
@@ -20,8 +26,11 @@ const RouterContext = createContext<Router | null>(null);
 export function RouterProvider(props: { children?: ComponentChildren }) {
   const manager = useManager();
 
-  const outlets = useSignal(manager.renderTree);
-  const preloads = useSignal(manager.renderTree);
+  const outlets = useSignal(manager.outlets);
+  const preloads = useSignal(manager.outlets);
+  const params = useSignal(manager.params);
+  const loaders = useSignal(manager.loaders);
+  const actions = useSignal(manager.actions);
 
   const navigate = async (href: string) => {
     // calculate target url
@@ -59,17 +68,19 @@ export function RouterProvider(props: { children?: ComponentChildren }) {
     // if everything is ok
     if (data.ok === "data") {
       // start preload modules
-      preloads.value = data.renderTree;
+      preloads.value = data.outlets;
       // import components
-      await importComponents(manager, data.renderTree);
-
+      await importComponents(manager, data.outlets);
       // push history
       history.pushState({ url: location.href }, "", targetUrl);
-      // update actions & loaders
-      data.actions.forEach(([ref, value]) => manager.actions.set(ref, value));
-      data.loaders.forEach(([ref, value]) => manager.loaders.set(ref, value));
       // start render whole page
-      outlets.value = data.renderTree;
+      batch(() => {
+        // update actions & loaders & params
+        params.value = data.params;
+        loaders.value = data.loaders;
+        actions.value = data.actions;
+        outlets.value = data.outlets;
+      });
       // now everything is done
     } else if (data.ok === "redirect") {
       await navigate(data.redirect);
@@ -77,6 +88,9 @@ export function RouterProvider(props: { children?: ComponentChildren }) {
   };
 
   const router = {
+    params: useComputed(() => new Map(params.value)),
+    loaders: useComputed(() => new Map(loaders.value)),
+    actions: useComputed(() => new Map(actions.value)),
     outlets,
     preloads,
     navigate,

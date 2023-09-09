@@ -12,24 +12,26 @@ import { Manager } from "./index.ts";
 type ComponentImports = Dictionary["componentImports"];
 
 type ServerManagerOptions = {
+  params: [string, string][];
   imports: ComponentImports;
-  loaders: Map<LoaderReference, any>;
-  actions: Map<ActionReference, any>;
+  loaders: [LoaderReference, any][];
+  actions: [ActionReference, any][];
+  outlets: ComponentReference[];
   entrance: BuiltFile;
   buildGraph: Map<BuiltFile, BuiltFile[]>;
-  renderTree: ComponentReference[];
   components: Map<ComponentReference, FunctionComponent>;
 };
 
 export function createServerManager(options: ServerManagerOptions): Manager {
   return {
+    params: options.params,
     loaders: options.loaders,
     actions: options.actions,
     entryPath: options.entrance,
     basePath: "/",
     buildGraph: options.buildGraph,
     imports: options.imports,
-    renderTree: options.renderTree,
+    outlets: options.outlets,
     components: options.components,
   };
 }

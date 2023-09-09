@@ -1,6 +1,11 @@
 // deno-lint-ignore-file no-explicit-any
 import { createContext, FunctionComponent, useContext } from "../../deps.ts";
-import { BuiltFile, ComponentReference, LoaderReference } from "../utils.ts";
+import {
+  ActionReference,
+  BuiltFile,
+  ComponentReference,
+  LoaderReference,
+} from "../utils.ts";
 
 export type Manager = {
   /** entrance of the entire website, `"build/s-XXXXXXXX.js"` */
@@ -14,9 +19,10 @@ export type Manager = {
   /** `"cccccccc" => <Component />` */
   components: Map<ComponentReference, FunctionComponent>;
 
-  loaders: Map<LoaderReference, any>;
-  actions: Map<LoaderReference, any>;
-  renderTree: ComponentReference[];
+  loaders: [LoaderReference, any][];
+  actions: [ActionReference, any][];
+  params: [string, string][];
+  outlets: ComponentReference[];
 };
 
 export const ManagerContext = createContext<Manager | null>(null);
@@ -31,26 +37,28 @@ export function useManager() {
 
 export function serializeManager(manager: Manager) {
   return JSON.stringify({
-    loaders: Array.from(manager.loaders),
-    actions: Array.from(manager.actions),
     imports: Array.from(manager.imports),
     buildGraph: Array.from(manager.buildGraph),
+    params: manager.params,
+    loaders: manager.loaders,
+    actions: manager.actions,
+    outlets: manager.outlets,
     basePath: manager.basePath,
     entryPath: manager.entryPath,
-    renderTree: manager.renderTree,
   }).replaceAll("/", "\\/");
 }
 
 export function deserializeManager(serialized: string) {
   const manager = JSON.parse(serialized);
   return {
-    loaders: new Map(manager.loaders),
-    actions: new Map(manager.actions),
     imports: new Map(manager.imports),
     buildGraph: new Map(manager.buildGraph),
     components: new Map(),
+    params: manager.params,
+    loaders: manager.loaders,
+    actions: manager.actions,
+    outlets: manager.outlets,
     basePath: manager.basePath,
     entryPath: manager.entryPath,
-    renderTree: manager.renderTree,
   } satisfies Manager;
 }

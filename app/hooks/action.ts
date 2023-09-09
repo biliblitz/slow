@@ -25,6 +25,9 @@ export function action$<T>(
   return action;
 }
 
+/**
+ * Tips. body will be ignored for DELETE method requests.
+ */
 export function delete$<T>(action: ActionFunction<T>): Action<T> {
   return action$(action, "DELETE");
 }
