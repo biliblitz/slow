@@ -8,8 +8,8 @@ import {
   useContext,
   useSignal,
 } from "../../deps.ts";
-import { importComponents } from "../manager/client.ts";
-import { useManager } from "../manager/index.ts";
+import { importComponents } from "../manifest/client.ts";
+import { useManifest } from "../manifest/index.ts";
 import { ComponentReference, ServerDataResponse } from "../utils.ts";
 
 type Navigate = (href: string) => Promise<void>;
@@ -25,13 +25,13 @@ type Router = {
 const RouterContext = createContext<Router | null>(null);
 
 export function RouterProvider(props: { children?: ComponentChildren }) {
-  const manager = useManager();
+  const manifest = useManifest();
 
-  const outlets = useSignal(manager.outlets);
-  const preloads = useSignal(manager.outlets);
-  const params = useSignal(manager.params);
-  const loaders = useSignal(manager.loaders);
-  const actions = useSignal(manager.actions);
+  const outlets = useSignal(manifest.outlets);
+  const preloads = useSignal(manifest.outlets);
+  const params = useSignal(manifest.params);
+  const loaders = useSignal(manifest.loaders);
+  const actions = useSignal(manifest.actions);
 
   const navigate = async (href: string) => {
     // calculate target url
@@ -71,7 +71,7 @@ export function RouterProvider(props: { children?: ComponentChildren }) {
       // start preload modules
       preloads.value = data.outlets;
       // import components
-      await importComponents(manager, data.outlets);
+      await importComponents(manifest, data.outlets);
       // push history
       history.pushState({ url: location.href }, "", targetUrl);
       // start render whole page

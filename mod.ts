@@ -11,6 +11,7 @@ export {
 } from "./app/components.tsx";
 export { hydrate } from "./app/hydrate.tsx";
 export { useCatchAllParam, useParam } from "./app/hooks/mod.ts";
+export { useNavigate } from "./app/components/router.tsx";
 
 // Re-export internal functions
 import { useAction, useLoader } from "./app/hooks/mod.ts";

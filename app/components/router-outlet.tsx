@@ -1,16 +1,16 @@
 import { createContext, useContext } from "../../deps.ts";
-import { serializeManager, useManager } from "../manager/index.ts";
+import { serializeManifest, useManifest } from "../manifest/index.ts";
 import { ComponentReference } from "../utils.ts";
 import { useRouter } from "./router.tsx";
 
-function ManagerSerializer() {
-  const manager = useManager();
+function ManifestSerializer() {
+  const manifest = useManifest();
 
   return (
     <script
       type="application/json"
-      data-slow="manager"
-      dangerouslySetInnerHTML={{ __html: serializeManager(manager) }}
+      data-slow
+      dangerouslySetInnerHTML={{ __html: serializeManifest(manifest) }}
     />
   );
 }
@@ -18,25 +18,27 @@ function ManagerSerializer() {
 const OutletContext = createContext<ComponentReference[]>([]);
 
 export function RouterOutlet() {
-  const manager = useManager();
+  const manifest = useManifest();
   const router = useRouter();
+
+  const entryUrl = manifest.basePath + manifest.entryPath;
 
   return (
     <OutletContext.Provider value={router.outlets.value}>
       <Outlet />
-      <ManagerSerializer />
-      <script type="module" src={manager.basePath + manager.entryPath}></script>
+      <ManifestSerializer />
+      <script type="module" src={entryUrl}></script>
     </OutletContext.Provider>
   );
 }
 
 export function Outlet() {
-  const manager = useManager();
+  const manifest = useManifest();
   const outlets = useContext(OutletContext);
 
   if (outlets.length > 0) {
     const [current, ...remains] = outlets;
-    const Component = manager.components.get(current)!;
+    const Component = manifest.components.get(current)!;
     return (
       <OutletContext.Provider value={remains}>
         <Component />

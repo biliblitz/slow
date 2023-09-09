@@ -7,7 +7,7 @@ import {
   LoaderReference,
 } from "../utils.ts";
 
-export type Manager = {
+export type Manifest = {
   /** entrance of the entire website, `"build/s-XXXXXXXX.js"` */
   entryPath: BuiltFile;
   /** Where the website hosts, default to `/` */
@@ -25,40 +25,40 @@ export type Manager = {
   outlets: ComponentReference[];
 };
 
-export const ManagerContext = createContext<Manager | null>(null);
+export const ManifestContext = createContext<Manifest | null>(null);
 
-export function useManager() {
-  const manager = useContext(ManagerContext);
-  if (!manager) {
+export function useManifest() {
+  const manifest = useContext(ManifestContext);
+  if (!manifest) {
     throw new Error("Please use hydrate function from slow");
   }
-  return manager;
+  return manifest;
 }
 
-export function serializeManager(manager: Manager) {
+export function serializeManifest(manifest: Manifest) {
   return JSON.stringify({
-    imports: Array.from(manager.imports),
-    buildGraph: Array.from(manager.buildGraph),
-    params: manager.params,
-    loaders: manager.loaders,
-    actions: manager.actions,
-    outlets: manager.outlets,
-    basePath: manager.basePath,
-    entryPath: manager.entryPath,
+    imports: Array.from(manifest.imports),
+    buildGraph: Array.from(manifest.buildGraph),
+    params: manifest.params,
+    loaders: manifest.loaders,
+    actions: manifest.actions,
+    outlets: manifest.outlets,
+    basePath: manifest.basePath,
+    entryPath: manifest.entryPath,
   }).replaceAll("/", "\\/");
 }
 
-export function deserializeManager(serialized: string) {
-  const manager = JSON.parse(serialized);
+export function deserializeManifest(serialized: string) {
+  const manifest = JSON.parse(serialized);
   return {
-    imports: new Map(manager.imports),
-    buildGraph: new Map(manager.buildGraph),
+    imports: new Map(manifest.imports),
+    buildGraph: new Map(manifest.buildGraph),
     components: new Map(),
-    params: manager.params,
-    loaders: manager.loaders,
-    actions: manager.actions,
-    outlets: manager.outlets,
-    basePath: manager.basePath,
-    entryPath: manager.entryPath,
-  } satisfies Manager;
+    params: manifest.params,
+    loaders: manifest.loaders,
+    actions: manifest.actions,
+    outlets: manifest.outlets,
+    basePath: manifest.basePath,
+    entryPath: manifest.entryPath,
+  } satisfies Manifest;
 }

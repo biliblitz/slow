@@ -1,15 +1,15 @@
-import { FunctionComponent } from "../../deps.ts";
+import { FunctionComponent } from "../deps.ts";
 import {
   denoPlugins,
   esbuild,
   join,
   resolve,
   toFileUrl,
-} from "../../server-deps.ts";
+} from "../server-deps.ts";
 
-import { Action } from "../hooks/action.ts";
-import { Loader } from "../hooks/loader.ts";
-import { Middleware } from "../hooks/middleware.ts";
+import { Action } from "./hooks/action.ts";
+import { Loader } from "./hooks/loader.ts";
+import { Middleware } from "./hooks/middleware.ts";
 import {
   ActionReference,
   ComponentReference,
@@ -21,7 +21,7 @@ import {
   hash,
   LoaderReference,
   MiddlewareReference,
-} from "../utils.ts";
+} from "./utils.ts";
 
 function staticReplacePlugin(mapping: Map<string, string>): esbuild.Plugin {
   return {
@@ -95,7 +95,7 @@ async function buildClientAssets(
   };
 }
 
-export async function build(workingDir = "./app") {
+export async function buildSlowCity(workingDir = "./app") {
   workingDir = resolve(workingDir);
 
   const dictionary: Dictionary = {
@@ -272,4 +272,4 @@ export async function build(workingDir = "./app") {
   return { root, dictionary, entrance, buildAssets, buildGraph };
 }
 
-export type Project = Awaited<ReturnType<typeof build>>;
+export type Project = Awaited<ReturnType<typeof buildSlowCity>>;

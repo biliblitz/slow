@@ -1,25 +1,25 @@
 import { useComputed } from "../../deps.ts";
-import { useManager } from "../manager/index.ts";
+import { useManifest } from "../manifest/index.ts";
 import { resolveDependencies } from "../utils.ts";
 import { useRouter } from "./router.tsx";
 
 function Preloads() {
-  const manager = useManager();
+  const manifest = useManifest();
   const router = useRouter();
 
   const deps = useComputed(() => {
     return resolveDependencies(
-      manager.buildGraph,
+      manifest.buildGraph,
       router.preloads.value
-        .map((ref) => manager.imports.get(ref)!)
-        .concat(manager.entryPath),
+        .map((ref) => manifest.imports.get(ref)!)
+        .concat(manifest.entryPath),
     );
   });
 
   return (
     <>
       {deps.value.map((dep) => (
-        <link key={dep} rel="modulepreload" href={manager.basePath + dep} />
+        <link key={dep} rel="modulepreload" href={manifest.basePath + dep} />
       ))}
     </>
   );

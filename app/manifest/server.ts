@@ -7,11 +7,11 @@ import {
   Dictionary,
   LoaderReference,
 } from "../utils.ts";
-import { Manager } from "./index.ts";
+import { Manifest } from "./index.ts";
 
 type ComponentImports = Dictionary["componentImports"];
 
-type ServerManagerOptions = {
+type ServerManifestOptions = {
   params: [string, string][];
   imports: ComponentImports;
   loaders: [LoaderReference, any][];
@@ -22,7 +22,7 @@ type ServerManagerOptions = {
   components: Map<ComponentReference, FunctionComponent>;
 };
 
-export function createServerManager(options: ServerManagerOptions): Manager {
+export function createServerManifest(options: ServerManifestOptions): Manifest {
   return {
     params: options.params,
     loaders: options.loaders,

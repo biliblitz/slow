@@ -1,18 +1,18 @@
 // deno-lint-ignore-file no-explicit-any
-import { extname, renderToString, typeByExtension } from "../../server-deps.ts";
-import { VNode } from "../../deps.ts";
+import { extname, renderToString, typeByExtension } from "../server-deps.ts";
+import { VNode } from "../deps.ts";
 
 import {
   ActionReference,
   ComponentReference,
   LoaderReference,
   ServerDataResponse,
-} from "../utils.ts";
-import { matchRoutes } from "../route.ts";
-import { ManagerContext } from "../manager/index.ts";
-import { createServerManager } from "../manager/server.ts";
+} from "./utils.ts";
+import { matchRoutes } from "./route.ts";
+import { ManifestContext } from "./manifest/index.ts";
+import { createServerManifest } from "./manifest/server.ts";
 import { Project } from "./build.ts";
-import { RequestEvent } from "../hooks/mod.ts";
+import { RequestEvent } from "./hooks/mod.ts";
 
 const LOGO = `
  ____  _                ____ _ _         
@@ -197,7 +197,7 @@ export function createSlowCity(root: VNode, project: Project) {
       );
     }
 
-    const manager = createServerManager({
+    const manifest = createServerManifest({
       params,
       outlets,
       actions,
@@ -209,9 +209,9 @@ export function createSlowCity(root: VNode, project: Project) {
     });
 
     const html = renderToString(
-      <ManagerContext.Provider value={manager}>
+      <ManifestContext.Provider value={manifest}>
         {root}
-      </ManagerContext.Provider>,
+      </ManifestContext.Provider>,
     );
 
     event.headers.set("content-type", "text/html");
