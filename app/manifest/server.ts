@@ -18,7 +18,8 @@ type ServerManifestOptions = {
   loaders: [LoaderReference, any][];
   actions: [ActionReference, any][];
   outlets: ComponentReference[];
-  entrance: BuiltFile;
+  entryPath: BuiltFile;
+  stylePath: BuiltFile | null;
   components: Map<ComponentReference, FunctionComponent>;
 };
 
@@ -31,7 +32,8 @@ export function createServerManifest(options: ServerManifestOptions): Manifest {
     imports: options.imports,
     outlets: options.outlets,
     basePath: "/",
-    entryPath: options.entrance,
+    entryPath: options.entryPath,
+    stylePath: options.stylePath,
     components: options.components,
   };
 }

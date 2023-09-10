@@ -195,7 +195,8 @@ export function createSlowCity(root: VNode, project: Project) {
       actions,
       loaders,
       imports: project.dictionary.componentImports,
-      entrance: project.entrance,
+      entryPath: project.entryPath,
+      stylePath: project.stylePath,
       components: project.dictionary.components,
     });
 

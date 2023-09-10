@@ -17,6 +17,8 @@ export type PageData = {
 export type Manifest = {
   /** entrance of the entire website, `"build/s-XXXXXXXX.js"` */
   entryPath: BuiltFile;
+  /** entrance of the entire style, `"build/s-XXXXXXXX.css"` */
+  stylePath: BuiltFile | null;
   /** Where the website hosts, default to `/` */
   basePath: string;
   /** `"build/s-XXXXXXXX.js" => ["build/s-YYYYYYYY.js", "build/s-ZZZZZZZZ.js"]` */
@@ -47,7 +49,7 @@ export function serializeManifest(manifest: Manifest) {
     .map(([file, deps]) => [encode(file), deps.map(encode)]);
 
   return JSON.stringify({
-    map: map.map((file) => file.slice(8, -3)),
+    map: map.map((file) => file.slice(6)),
     graph,
     imports,
     params: manifest.params,
@@ -56,12 +58,15 @@ export function serializeManifest(manifest: Manifest) {
     outlets: manifest.outlets,
     basePath: manifest.basePath,
     entryPath: encode(manifest.entryPath),
+    stylePath: manifest.stylePath
+      ? encode(manifest.stylePath)
+      : manifest.stylePath,
   }).replaceAll("/", "\\/");
 }
 
 export function deserializeManifest(serialized: string) {
   const manifest = JSON.parse(serialized);
-  const map = (manifest.map as string[]).map((file) => `build/s-${file}.js`);
+  const map = (manifest.map as string[]).map((file) => `build/${file}`);
   const decode = (id: number) => map[id];
 
   const imports = new Map((manifest.imports as [string, number][])
@@ -79,5 +84,8 @@ export function deserializeManifest(serialized: string) {
     outlets: manifest.outlets,
     basePath: manifest.basePath,
     entryPath: decode(manifest.entryPath),
+    stylePath: typeof manifest.stylePath === "number"
+      ? decode(manifest.stylePath)
+      : manifest.stylePath,
   } satisfies Manifest;
 }

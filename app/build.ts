@@ -3,9 +3,12 @@ import {
   denoPlugins,
   esbuild,
   join,
+  postcssPresetEnv,
   resolve,
   toFileUrl,
 } from "../server-deps.ts";
+import { postcssPlugin } from "./esbuild/postcss.ts";
+import { replacePlugin } from "./esbuild/replace.ts";
 
 import { Action } from "./hooks/action.ts";
 import { Loader } from "./hooks/loader.ts";
@@ -19,26 +22,11 @@ import {
   filenameMatchesWithNickname,
   getRoutePathComponent,
   hash,
+  isCssFile,
+  isJavaScriptFile,
   LoaderReference,
   MiddlewareReference,
 } from "./utils.ts";
-
-function staticReplacePlugin(mapping: Map<string, string>): esbuild.Plugin {
-  return {
-    name: "static-replace",
-    setup(build) {
-      build.onLoad({ filter: /.*/ }, (args) => {
-        if (args.namespace === "file" && mapping.has(args.path)) {
-          return {
-            contents: mapping.get(args.path),
-            loader: "js",
-          };
-        }
-        return null;
-      });
-    },
-  };
-}
 
 async function buildClientAssets(
   entryPoints: string[],
@@ -48,10 +36,11 @@ async function buildClientAssets(
     plugins,
     entryPoints,
     entryNames: "s-[hash]",
+    chunkNames: "s-[hash]",
+    assetNames: "assets/a-[hash]",
     bundle: true,
     splitting: true,
     minify: true,
-    chunkNames: "s-[hash]",
     outdir: "./build",
     format: "esm",
     metafile: true,
@@ -220,11 +209,39 @@ export async function buildSlowCity(workingDir = "./app") {
   }
 
   const root = await scanRoutes(join(workingDir, "routes"));
+  const entries = {
+    client: "",
+    style: null as string | null,
+  };
+  for await (const file of Deno.readDir(workingDir)) {
+    const filename = file.name.toLowerCase();
+    const filePath = toFileUrl(join(workingDir, file.name)).href;
+    if (file.isFile) {
+      // register entry.client
+      if (
+        filename.startsWith("entry.client") &&
+        isJavaScriptFile(filename.slice(12))
+      ) {
+        if (entries.client) throw new Error("Multiple entry.client file found");
+        entries.client = filePath;
+      }
+      // register style entry
+      if (filename.startsWith("global") && isCssFile(filename.slice(6))) {
+        if (entries.style) throw new Error("Multiple global.css file found");
+        entries.style = filePath;
+      }
+    }
+  }
+
+  if (!entries.client) {
+    throw new Error("No entry.client.tsx file found");
+  }
 
   // === analyze entry points ===
   const entryPoints = [
     // add client entrance
-    toFileUrl(join(workingDir, "entry.client.tsx")).href,
+    entries.client,
+    ...(entries.style ? [entries.style] : []),
     // components
     ...dictionary.componentUrls.values(),
   ];
@@ -253,13 +270,16 @@ export async function buildSlowCity(workingDir = "./app") {
     ],
   );
 
+  const [resolverPlugin, loaderPlugin] = denoPlugins({
+    configPath: resolve("./deno.json"),
+  }) as esbuild.Plugin[];
   const { buildAssets, buildGraph, buildEntries } = await buildClientAssets(
     entryPoints,
     [
-      staticReplacePlugin(fileConvertList),
-      ...denoPlugins({
-        configPath: resolve("./deno.json"),
-      }) as esbuild.Plugin[],
+      postcssPlugin({ plugins: [postcssPresetEnv()] }),
+      replacePlugin(fileConvertList),
+      resolverPlugin,
+      loaderPlugin,
     ],
   );
 
@@ -267,9 +287,10 @@ export async function buildSlowCity(workingDir = "./app") {
     const buildPath = buildEntries.get(importUrl)!;
     dictionary.componentImports.set(hash, buildPath);
   }
-  const entrance = buildEntries.get(entryPoints[0])!;
+  const entryPath = buildEntries.get(entries.client)!;
+  const stylePath = entries.style && buildEntries.get(entries.style)!;
 
-  return { root, dictionary, entrance, buildAssets, buildGraph };
+  return { root, dictionary, entryPath, stylePath, buildAssets, buildGraph };
 }
 
 export type Project = Awaited<ReturnType<typeof buildSlowCity>>;

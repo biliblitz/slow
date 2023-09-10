@@ -97,20 +97,22 @@ export async function hash(message: string) {
   return (await sha256(message)).slice(0, 8);
 }
 
-const jsreg = /\.(?:js|ts|md)x?$/;
+const JS_REGEX = /\.[jt]sx?$/i;
+const CSS_REGEX = /\.css$/i;
 
-function isSourceFile(filename: string) {
-  if (Deno.build.os === "windows") {
-    filename = filename.toLocaleLowerCase();
-  }
-  return jsreg.test(filename);
+export function isJavaScriptFile(filename: string) {
+  return JS_REGEX.test(filename);
+}
+
+export function isCssFile(filename: string) {
+  return CSS_REGEX.test(filename);
 }
 
 /**
  * Matches `loader.ts`, `loader.nick.tsx`, `loader.anything.else.ts`
  */
 export function filenameMatchesWithNickname(filename: string, target: string) {
-  return isSourceFile(filename) && filename.startsWith(target + ".");
+  return isJavaScriptFile(filename) && filename.startsWith(target + ".");
 }
 
 /**
@@ -119,7 +121,7 @@ export function filenameMatchesWithNickname(filename: string, target: string) {
 export function filenameMatches(filename: string, target: string) {
   return (
     filename.startsWith(target) &&
-    isSourceFile(filename.slice(target.length))
+    isJavaScriptFile(filename.slice(target.length))
   );
 }
 
