@@ -64,7 +64,7 @@ export function serializeManifest(manifest: Manifest) {
   }).replaceAll("/", "\\/");
 }
 
-export function deserializeManifest(serialized: string) {
+export function deserializeManifest(serialized: string): Manifest {
   const manifest = JSON.parse(serialized);
   const map = (manifest.map as string[]).map((file) => `build/${file}`);
   const decode = (id: number) => map[id];
@@ -87,5 +87,5 @@ export function deserializeManifest(serialized: string) {
     stylePath: typeof manifest.stylePath === "number"
       ? decode(manifest.stylePath)
       : manifest.stylePath,
-  } satisfies Manifest;
+  };
 }

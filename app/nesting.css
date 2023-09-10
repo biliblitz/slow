@@ -1,0 +1,5 @@
+/* Thanks to postcss-preset-env, css nesting is supported */
+
+body {
+  color: rgb(249, 47, 47);
+}

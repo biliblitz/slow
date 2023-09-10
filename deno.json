@@ -4,7 +4,13 @@
     "jsxImportSource": "preact",
     "lib": ["deno.window", "dom"]
   },
+  "tasks": {
+    "dev": "deno run -A --watch=app start.ts",
+    "start": "deno run -A start.ts"
+  },
   "imports": {
+    "slow": "./mod.ts",
+    "slow/server": "./server.ts",
     "preact": "https://esm.sh/preact@10.17.1",
     "preact/": "https://esm.sh/preact@10.17.1/",
     "@preact/signals": "https://esm.sh/@preact/signals@1.2.1",
