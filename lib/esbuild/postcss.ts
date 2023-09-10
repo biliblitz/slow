@@ -32,25 +32,42 @@ export function postcssPlugin(
     setup(build) {
       // local css imports
       build.onResolve(
-        { filter: /.*/, namespace: "file" },
+        { filter: CSS_REGEX, namespace: "file" },
         (args) => {
           const url = args.importer
             ? new URL(args.path, toFileUrl(args.importer))
             : toFileUrl(args.path);
 
-          if (CSS_REGEX.test(url.pathname) || ASSETS_REGEX.test(url.pathname)) {
-            if (url.protocol === "file:") {
-              return { path: url.pathname, namespace: "file" };
-            }
-            if (url.protocol === "http:" || url.protocol === "https:") {
-              return { path: url.href, namespace: "postcss-remote-source" };
-            }
-            throw new Error(`Unknown import protocol: '${url.protocol}'`);
+          if (url.protocol === "file:") {
+            return { path: url.pathname, namespace: "file" };
+          }
+          if (url.protocol === "http:" || url.protocol === "https:") {
+            return { path: url.href, namespace: "postcss-remote-source" };
           }
 
-          return null;
+          throw new Error(`Unknown import protocol: '${url.protocol}'`);
         },
       );
+
+      // local assets imports
+      build.onResolve(
+        { filter: ASSETS_REGEX, namespace: "file" },
+        (args) => {
+          const url = args.importer
+            ? new URL(args.path, toFileUrl(args.importer))
+            : toFileUrl(args.path);
+
+          if (url.protocol === "file:") {
+            return { path: url.pathname, namespace: "file" };
+          }
+          if (url.protocol === "http:" || url.protocol === "https:") {
+            return { path: url.href, namespace: "postcss-remote-source" };
+          }
+
+          throw new Error(`Unknown import protocol: '${url.protocol}'`);
+        },
+      );
+
       // remote css imports
       build.onResolve(
         { filter: /.*/, namespace: "postcss-remote-source" },

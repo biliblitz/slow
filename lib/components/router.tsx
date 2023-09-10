@@ -17,7 +17,6 @@ type Navigate = (href: string) => Promise<void>;
 type Router = {
   params: ReadonlySignal<ReadonlyMap<string, string>>;
   loaders: ReadonlySignal<ReadonlyMap<string, any>>;
-  actions: ReadonlySignal<ReadonlyMap<string, any>>;
   outlets: ReadonlySignal<ComponentReference[]>;
   preloads: ReadonlySignal<ComponentReference[]>;
   navigate: Navigate;
@@ -30,6 +29,10 @@ type HistoryState = {
 
 const RouterContext = createContext<Router | null>(null);
 
+function compareStringArray(a: string[], b: string[]) {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
 export function RouterProvider(props: { children?: ComponentChildren }) {
   const manifest = useManifest();
 
@@ -37,7 +40,6 @@ export function RouterProvider(props: { children?: ComponentChildren }) {
   const preloads = useSignal(manifest.outlets);
   const params = useSignal(manifest.params);
   const loaders = useSignal(manifest.loaders);
-  const actions = useSignal(manifest.actions);
 
   /** Update current page or  */
   const render = async (data: PageData) => {
@@ -51,9 +53,10 @@ export function RouterProvider(props: { children?: ComponentChildren }) {
       // update actions & loaders & params
       params.value = Array.from(new Map(params.value.concat(data.params)));
       loaders.value = Array.from(new Map(loaders.value.concat(data.loaders)));
-      actions.value = Array.from(new Map(actions.value.concat(data.actions)));
       // update outlets
-      outlets.value = data.outlets;
+      if (!compareStringArray(outlets.value, data.outlets)) {
+        outlets.value = data.outlets;
+      }
     });
   };
 
@@ -107,7 +110,6 @@ export function RouterProvider(props: { children?: ComponentChildren }) {
   const router = {
     params: useComputed(() => new Map(params.value)),
     loaders: useComputed(() => new Map(loaders.value)),
-    actions: useComputed(() => new Map(actions.value)),
     outlets,
     preloads,
     navigate,
@@ -117,7 +119,6 @@ export function RouterProvider(props: { children?: ComponentChildren }) {
   useEffect(() => {
     const initialData: PageData = {
       loaders: manifest.loaders,
-      actions: manifest.actions,
       params: manifest.params,
       outlets: manifest.outlets,
     };

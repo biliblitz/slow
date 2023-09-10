@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { useComputed, useSignal } from "../../deps.ts";
+import { batch, useComputed, useSignal } from "../../deps.ts";
 import { useRouter } from "../components/router.tsx";
 import { ServerDataResponse } from "../utils.ts";
 import { ActionState } from "./action.ts";
@@ -26,10 +26,12 @@ export function useLoader(ref: string) {
 
 export function useAction(ref: string) {
   const router = useRouter();
-  const data = useComputed(() => router.actions.value.get(ref) || null);
+  const data = useSignal(null);
   const isRunning = useSignal(false);
 
   const submit = async (formData: FormData) => {
+    isRunning.value = true;
+
     // fetch target
     const dataUrl = new URL(location.href);
     if (!dataUrl.pathname.endsWith("/")) {
@@ -39,13 +41,19 @@ export function useAction(ref: string) {
     dataUrl.searchParams.set("saction", ref);
 
     const response = await fetch(dataUrl, { body: formData, method: "POST" });
-    const data = await response.json() as ServerDataResponse;
+    const resp = await response.json() as ServerDataResponse;
 
     // as always, making a POST request does not trigger history update
-    if (data.ok === "data") {
-      await router.render(data.data);
-    } else if (data.ok === "redirect") {
-      await router.navigate(data.redirect);
+    if (resp.ok === "success") {
+      batch(() => {
+        data.value = resp.action;
+        isRunning.value = false;
+      });
+      await router.render(resp.data);
+    } else if (resp.ok === "data") {
+      await router.render(resp.data);
+    } else if (resp.ok === "redirect") {
+      await router.navigate(resp.redirect);
     }
   };
 

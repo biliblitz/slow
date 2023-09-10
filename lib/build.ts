@@ -190,6 +190,9 @@ export async function buildSlowCity(options?: BuildSlowCityOptions) {
       if (filenameMatches(filename, "index")) {
         if (module.index) throw new Error("Multiple index found");
         module.index = await registerComponent(filePath);
+      } else if (filenameMatches(filename, "error")) {
+        if (module.error) throw new Error("Multiple error found");
+        module.error = await registerComponent(filePath);
       } else if (filenameMatches(filename, "layout")) {
         if (module.layout) throw new Error("Multiple layout found");
         module.layout = await registerComponent(filePath);

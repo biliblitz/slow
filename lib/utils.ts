@@ -34,6 +34,7 @@ export type Route = {
 
 export type Module = {
   index: ComponentReference | null;
+  error: ComponentReference | null;
   layout: ComponentReference | null;
   middleware: MiddlewareReference | null;
   actions: ActionReference[];
@@ -52,17 +53,15 @@ export type Dictionary = {
   componentImports: Map<ComponentReference, BuiltFile>;
 };
 
-export type ServerDataResponse = {
-  ok: "data";
-  data: PageData;
-} | {
-  ok: "redirect";
-  redirect: string;
-};
+export type ServerDataResponse =
+  | { ok: "success"; data: PageData; action: any }
+  | { ok: "data"; data: PageData }
+  | { ok: "redirect"; redirect: string };
 
 export function createModule(): Module {
   return {
     index: null,
+    error: null,
     layout: null,
     middleware: null,
     actions: [],

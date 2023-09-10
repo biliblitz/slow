@@ -1,17 +1,11 @@
-// deno-lint-ignore-file no-explicit-any
 import { createContext, FunctionComponent, useContext } from "../../deps.ts";
-import {
-  ActionReference,
-  BuiltFile,
-  ComponentReference,
-  LoaderReference,
-} from "../utils.ts";
+import { Loaders, Outlets, Params } from "../route.ts";
+import { BuiltFile, ComponentReference } from "../utils.ts";
 
 export type PageData = {
-  loaders: [LoaderReference, any][];
-  actions: [ActionReference, any][];
-  outlets: ComponentReference[];
-  params: [string, string][];
+  loaders: Loaders;
+  outlets: Outlets;
+  params: Params;
 };
 
 export type Manifest = {
@@ -54,7 +48,6 @@ export function serializeManifest(manifest: Manifest) {
     imports,
     params: manifest.params,
     loaders: manifest.loaders,
-    actions: manifest.actions,
     outlets: manifest.outlets,
     basePath: manifest.basePath,
     entryPath: encode(manifest.entryPath),
@@ -80,7 +73,6 @@ export function deserializeManifest(serialized: string): Manifest {
     components: new Map(),
     params: manifest.params,
     loaders: manifest.loaders,
-    actions: manifest.actions,
     outlets: manifest.outlets,
     basePath: manifest.basePath,
     entryPath: decode(manifest.entryPath),
