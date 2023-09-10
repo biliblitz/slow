@@ -1,9 +1,17 @@
 import { esbuild, postcss, toFileUrl } from "../../server-deps.ts";
 
-const CSS_REGEX = /\.css$/;
-const ASSETS_REGEX = /\.(?:ttf|otf|eot|woff|woff2|svg|jpe?g|png|gif|webp)$/;
+const CSS_EXTENSIONS = ["css"];
+const FONT_EXTENSIONS = ["ttf", "otf", "eot", "woff", "woff2"];
+const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "gif", "webp", "svg"];
 
-const cache = await caches.open("esbuild-postcss-plugin");
+function createRegExp(matches: string[]) {
+  return new RegExp("\\.(?:" + matches.join("|") + ")$", "i");
+}
+
+const CSS_REGEX = createRegExp(CSS_EXTENSIONS);
+const ASSETS_REGEX = createRegExp([...FONT_EXTENSIONS, ...IMAGE_EXTENSIONS]);
+
+const cache = await caches.open("esbuild-plugin-postcss");
 
 async function downloadResouceWithCache(url: string) {
   const cacheResponse = await cache.match(url);
