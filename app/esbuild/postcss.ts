@@ -66,7 +66,7 @@ export function postcssPlugin(
         async (args) => {
           const response = await downloadResouceWithCache(args.path);
           const source = await response.text();
-          const result = await processor.process(source);
+          const result = await processor.process(source, { from: args.path });
 
           return {
             loader: "css",
@@ -99,7 +99,7 @@ export function postcssPlugin(
         { filter: CSS_REGEX, namespace: "file" },
         async (args) => {
           const source = await Deno.readTextFile(args.path);
-          const result = await processor.process(source);
+          const result = await processor.process(source, { from: args.path });
 
           return {
             loader: "css",

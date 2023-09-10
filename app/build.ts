@@ -3,7 +3,7 @@ import {
   denoPlugins,
   esbuild,
   join,
-  postcssPresetEnv,
+  postcss,
   resolve,
   toFileUrl,
 } from "../server-deps.ts";
@@ -84,8 +84,19 @@ async function buildClientAssets(
   };
 }
 
-export async function buildSlowCity(workingDir = "./app") {
-  workingDir = resolve(workingDir);
+export type BuildSlowCityOptions = {
+  /** Target directory, default to "./app" */
+  dir?: string;
+  esbuildPlugins?: esbuild.Plugin[];
+  postcssPlugins?: postcss.AcceptedPlugin[];
+};
+
+export async function buildSlowCity(options?: BuildSlowCityOptions) {
+  options ??= {};
+  options.dir ??= "./app";
+  options.dir = resolve(options.dir);
+  options.esbuildPlugins ??= [];
+  options.postcssPlugins ??= [];
 
   const dictionary: Dictionary = {
     loader: new Map(),
@@ -208,14 +219,14 @@ export async function buildSlowCity(workingDir = "./app") {
     return module;
   }
 
-  const root = await scanRoutes(join(workingDir, "routes"));
+  const root = await scanRoutes(join(options.dir, "routes"));
   const entries = {
     client: "",
     style: null as string | null,
   };
-  for await (const file of Deno.readDir(workingDir)) {
+  for await (const file of Deno.readDir(options.dir)) {
     const filename = file.name.toLowerCase();
-    const filePath = toFileUrl(join(workingDir, file.name)).href;
+    const filePath = toFileUrl(join(options.dir, file.name)).href;
     if (file.isFile) {
       // register entry.client
       if (
@@ -276,10 +287,11 @@ export async function buildSlowCity(workingDir = "./app") {
   const { buildAssets, buildGraph, buildEntries } = await buildClientAssets(
     entryPoints,
     [
-      postcssPlugin({ plugins: [postcssPresetEnv()] }),
+      postcssPlugin({ plugins: [...options.postcssPlugins] }),
       replacePlugin(fileConvertList),
       resolverPlugin,
       loaderPlugin,
+      ...options.esbuildPlugins,
     ],
   );
 
