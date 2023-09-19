@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { batch, useComputed, useSignal } from "../../deps.ts";
 import { useRouter } from "../components/router.tsx";
-import { ServerDataResponse } from "../utils.ts";
+import { ServerActionResponse, ServerErrorResponse } from "../utils.ts";
 import { ActionState } from "./action.ts";
 
 export type RequestEvent = {
@@ -40,20 +40,34 @@ export function useAction(ref: string) {
     dataUrl.pathname += "s-data.json";
     dataUrl.searchParams.set("saction", ref);
 
-    const response = await fetch(dataUrl, { body: formData, method: "POST" });
-    const resp = await response.json() as ServerDataResponse;
+    const response = await fetch(dataUrl, { body: formData, method: "POST" })
+      .then((resp) => resp.json() as Promise<ServerActionResponse>)
+      .catch((error): Promise<ServerActionResponse> =>
+        error instanceof Response
+          // if return is not 200
+          ? error.text().then((message) => ({
+            ok: "error",
+            status: error.status,
+            message: message || error.statusText,
+          }))
+          // maybe network errors / server boom
+          : Promise.resolve({
+            ok: "error",
+            status: 500,
+            message: error instanceof Error ? error.message : String(error),
+          })
+      );
 
     // as always, making a POST request does not trigger history update
-    if (resp.ok === "success") {
+    if (response.ok === "success") {
       batch(() => {
-        data.value = resp.action;
+        data.value = response.action;
         isRunning.value = false;
       });
-      await router.render(resp.data);
-    } else if (resp.ok === "data") {
-      await router.render(resp.data);
-    } else if (resp.ok === "redirect") {
-      await router.navigate(resp.redirect);
+      await router.render(response.data);
+    } else if (response.ok === "redirect") {
+      await router.navigate(response.redirect);
+    } else if (response.ok === "error") {
     }
   };
 

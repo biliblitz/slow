@@ -2,7 +2,11 @@
 import { extname, renderToString, typeByExtension } from "../server-deps.ts";
 import { VNode } from "../deps.ts";
 
-import { ServerDataResponse } from "./utils.ts";
+import {
+  ServerActionResponse,
+  ServerLoaderResponse,
+  ServerRedirectResponse,
+} from "./utils.ts";
 import {
   extractErrorOutlets,
   extractIndexOutlets,
@@ -29,9 +33,6 @@ const LOGO = `
 export function createSlowCity(root: VNode, project: Project) {
   console.log(LOGO);
 
-  /**
-   * Run the action, and returns
-   */
   async function runAction(
     routes: MatchRoute[],
     event: RequestEvent,
@@ -79,22 +80,6 @@ export function createSlowCity(root: VNode, project: Project) {
     const url = new URL(req.url);
     const headers = new Headers();
 
-    // === STATIC ASSETS ===
-
-    // if is fetch assets
-    if (url.pathname.startsWith("/build/")) {
-      const assetName = url.pathname.slice(1);
-      const contents = project.buildAssets.get(assetName);
-      if (contents) {
-        const mime = typeByExtension(extname(assetName)) ||
-          "application/octet-stream";
-        headers.set("Content-Type", mime);
-        headers.set("Cache-Control", "max-age=604800");
-        return new Response(contents, { headers });
-      }
-      return new Response(null, { status: 404 });
-    }
-
     // === RENDER ===
 
     function renderPage(data: PageData, status = 200) {
@@ -115,11 +100,11 @@ export function createSlowCity(root: VNode, project: Project) {
         </ManifestContext.Provider>,
       );
 
-      headers.set("Content-Type", "text/html");
+      headers.set("content-type", "text/html");
       return new Response("<!DOCTYPE html>" + html, { status, headers });
     }
 
-    async function renderErrorPage(status: number) {
+    async function renderErrorPage(status: number, message: string) {
       const routes = matchErrorRoutes(project.root, url.pathname);
 
       // assert for non-error page websites
@@ -134,6 +119,22 @@ export function createSlowCity(root: VNode, project: Project) {
       return renderPage({ loaders, outlets, params }, status);
     }
 
+    // === STATIC ASSETS ===
+
+    // if is fetch assets
+    if (url.pathname.startsWith("/build/")) {
+      const assetName = url.pathname.slice(1);
+      const contents = project.buildAssets.get(assetName);
+      if (contents) {
+        const mime = typeByExtension(extname(assetName)) ||
+          "application/octet-stream";
+        headers.set("content-type", mime);
+        headers.set("cache-control", "max-age=604800");
+        return new Response(contents, { headers });
+      }
+      return await renderErrorPage(404, "Not Found");
+    }
+
     // === PREPARES ===
 
     // check if url is a valid page
@@ -145,12 +146,37 @@ export function createSlowCity(root: VNode, project: Project) {
     const missingFinalSlash = !pathname.endsWith("/");
     if (missingFinalSlash) pathname += "/";
 
+    async function catchErrors(fn: () => Promise<Response>) {
+      try {
+        return await fn();
+      } catch (e) {
+        if (e instanceof Response) {
+          return e;
+        }
+        if (e instanceof URL) {
+          if (isFetchData) {
+            return Response.json(
+              { ok: "redirect", redirect: e.href } as ServerRedirectResponse,
+              { headers },
+            );
+          } else {
+            headers.set("location", e.href);
+            return new Response(null, { status: 302, headers });
+          }
+        }
+        console.error(e);
+
+        const message = e instanceof Error ? e.message : String(e);
+        return await renderErrorPage(500, message);
+      }
+    }
+
     // === EARLY REJECTIONS ===
 
     // Reject all non-POST and non-GET requests
     if (req.method !== "POST" && req.method !== "GET") {
-      headers.set("Allow", "GET, POST");
-      return await renderErrorPage(405);
+      headers.set("allow", "GET, POST");
+      return await renderErrorPage(405, "Method Not Allowed");
     }
 
     // === MATCH ROUTES ===
@@ -169,7 +195,7 @@ export function createSlowCity(root: VNode, project: Project) {
 
     // If no route matches, set error code to 404
     if (!routes) {
-      return await renderErrorPage(404);
+      return await renderErrorPage(404, "Not Found");
     }
 
     // === PREPARE FOR ACTIONS / LOADERS ===
@@ -187,36 +213,42 @@ export function createSlowCity(root: VNode, project: Project) {
 
       // render 405 page if actions does not exist
       if (!hasAction) {
-        headers.set("Allow", "GET");
-        return await renderErrorPage(405);
+        headers.set("allow", "GET");
+        return await renderErrorPage(405, "Method Not Allowed");
       }
 
       // run action
-      const action = await runAction(routes, event, actionRef);
-      if (isFetchData) {
+      return await catchErrors(async () => {
+        const action = await runAction(routes, event, actionRef);
         const loaders = await runLoaders(routes, event);
         const outlets = extractIndexOutlets(routes);
         const data = { params, loaders, outlets };
 
+        if (isFetchData) {
+          return Response.json(
+            { ok: "success", action, data } satisfies ServerActionResponse,
+            { headers },
+          );
+        }
+
+        return renderPage(data);
+      });
+    }
+
+    // w/o actions
+    return await catchErrors(async () => {
+      const loaders = await runLoaders(routes, event);
+      const outlets = extractIndexOutlets(routes);
+      const data = { params, loaders, outlets };
+
+      if (isFetchData) {
         return Response.json(
-          { ok: "success", action, data } satisfies ServerDataResponse,
+          { ok: "data", data } satisfies ServerLoaderResponse,
           { headers },
         );
       }
 
-      // otherwise we just ignore the result
-    }
-
-    const loaders = await runLoaders(routes, event);
-    const outlets = extractIndexOutlets(routes);
-    const data = { params, loaders, outlets };
-    if (isFetchData) {
-      return Response.json(
-        { ok: "data", data } satisfies ServerDataResponse,
-        { headers },
-      );
-    }
-
-    return renderPage(data);
+      return renderPage(data);
+    });
   };
 }

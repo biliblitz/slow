@@ -53,10 +53,24 @@ export type Dictionary = {
   componentImports: Map<ComponentReference, BuiltFile>;
 };
 
-export type ServerDataResponse =
-  | { ok: "success"; data: PageData; action: any }
+export type ServerRedirectResponse = {
+  ok: "redirect";
+  redirect: string;
+};
+export type ServerErrorResponse = {
+  ok: "error";
+  status: number;
+  message: string;
+};
+export type ServerLoaderResponse =
   | { ok: "data"; data: PageData }
-  | { ok: "redirect"; redirect: string };
+  | ServerRedirectResponse
+  | ServerErrorResponse;
+
+export type ServerActionResponse =
+  | { ok: "success"; data: PageData; action: any }
+  | ServerRedirectResponse
+  | ServerErrorResponse;
 
 export function createModule(): Module {
   return {
