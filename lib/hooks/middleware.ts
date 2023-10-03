@@ -1,7 +1,7 @@
 import { RequestEvent } from "./mod.ts";
 
-export type Middleware = (event: RequestEvent) => void | Promise<void>;
+export type Middleware<T = any> = (event: RequestEvent) => T | Promise<T>;
 
-export function middleware$(middleware: Middleware) {
+export function middleware$<T>(middleware: Middleware<T>) {
   return middleware;
 }

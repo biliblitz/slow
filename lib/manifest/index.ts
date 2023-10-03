@@ -1,4 +1,4 @@
-import { createContext, FunctionComponent, useContext } from "../../deps.ts";
+import { ComponentType, createContext, useContext } from "../../deps.ts";
 import { Loaders, Outlets, Params } from "../route.ts";
 import { BuiltFile, ComponentReference } from "../utils.ts";
 
@@ -20,7 +20,7 @@ export type Manifest = {
   /** `"cccccccc" => "build/s-XXXXXXXX.js"` */
   imports: Map<ComponentReference, BuiltFile>;
   /** `"cccccccc" => <Component />` */
-  components: Map<ComponentReference, FunctionComponent>;
+  components: Map<ComponentReference, ComponentType>;
 } & PageData;
 
 export const ManifestContext = createContext<Manifest | null>(null);

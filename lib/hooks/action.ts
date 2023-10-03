@@ -1,26 +1,27 @@
 // deno-lint-ignore-file no-explicit-any
 import { ReadonlySignal } from "../../deps.ts";
-import { RequestEvent, useAction } from "./mod.ts";
+import { RequestEvent } from "./mod.ts";
 
 export type ActionReturn<T> = T | Promise<T>;
 export type ActionFunction<T> = (event: RequestEvent) => ActionReturn<T>;
-
 export type ActionState<T> = {
   readonly data: ReadonlySignal<T | null>;
   readonly isRunning: ReadonlySignal<boolean>;
   readonly ref: string;
   submit(formData: FormData): Promise<void>;
 };
-
-export interface Action<T = any> {
-  (): ActionState<T>;
+export type Action<T = any> = () => ActionState<T>;
+export interface ActionInternal<T = any> {
   __ref: string;
   __func: ActionFunction<T>;
 }
 
 export function action$<T>(actionFn: ActionFunction<T>): Action<T> {
-  const action = () => useAction(action.__ref) as ActionState<T>;
-  action.__ref = "";
-  action.__func = actionFn;
-  return action;
+  const internal: ActionInternal<T> = {
+    __ref: "",
+    __func: actionFn,
+  };
+  // we does not return action itself in code
+  // we will do a magic replacement in building process.
+  return internal as unknown as Action<T>;
 }

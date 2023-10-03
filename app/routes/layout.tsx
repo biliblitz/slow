@@ -1,5 +1,7 @@
 import { Outlet } from "slow";
 
+import "./test.css";
+
 export default function () {
   return (
     <div>

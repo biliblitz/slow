@@ -1,15 +1,5 @@
 import { esbuild, postcss, toFileUrl } from "../../server-deps.ts";
-
-const CSS_EXTENSIONS = ["css"];
-const FONT_EXTENSIONS = ["ttf", "otf", "eot", "woff", "woff2"];
-const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "gif", "webp", "svg"];
-
-function createRegExp(matches: string[]) {
-  return new RegExp("\\.(?:" + matches.join("|") + ")$", "i");
-}
-
-const CSS_REGEX = createRegExp(CSS_EXTENSIONS);
-const ASSETS_REGEX = createRegExp([...FONT_EXTENSIONS, ...IMAGE_EXTENSIONS]);
+import { isAssert, isCss } from "../utils/ext.ts";
 
 const cache = await caches.open("esbuild-plugin-postcss");
 
@@ -25,46 +15,31 @@ async function downloadResouceWithCache(url: string) {
 export function postcssPlugin(
   options: { plugins: postcss.AcceptedPlugin[] },
 ): esbuild.Plugin {
-  const processor = postcss(options.plugins);
+  const processor = postcss(options?.plugins);
 
   return {
     name: "postcss",
     setup(build) {
       // local css imports
       build.onResolve(
-        { filter: CSS_REGEX, namespace: "file" },
+        { filter: /.*/, namespace: "file" },
         (args) => {
-          const url = args.importer
-            ? new URL(args.path, toFileUrl(args.importer))
-            : toFileUrl(args.path);
+          if (isCss(args.path) || isAssert(args.path)) {
+            const url = args.importer
+              ? new URL(args.path, toFileUrl(args.importer))
+              : toFileUrl(args.path);
 
-          if (url.protocol === "file:") {
-            return { path: url.pathname, namespace: "file" };
-          }
-          if (url.protocol === "http:" || url.protocol === "https:") {
-            return { path: url.href, namespace: "postcss-remote-source" };
-          }
+            if (url.protocol === "file:") {
+              return { path: url.pathname, namespace: "file" };
+            }
+            if (url.protocol === "http:" || url.protocol === "https:") {
+              return { path: url.href, namespace: "postcss-remote-source" };
+            }
 
-          throw new Error(`Unknown import protocol: '${url.protocol}'`);
-        },
-      );
-
-      // local assets imports
-      build.onResolve(
-        { filter: ASSETS_REGEX, namespace: "file" },
-        (args) => {
-          const url = args.importer
-            ? new URL(args.path, toFileUrl(args.importer))
-            : toFileUrl(args.path);
-
-          if (url.protocol === "file:") {
-            return { path: url.pathname, namespace: "file" };
-          }
-          if (url.protocol === "http:" || url.protocol === "https:") {
-            return { path: url.href, namespace: "postcss-remote-source" };
+            throw new Error(`Unknown import protocol: '${url.protocol}'`);
           }
 
-          throw new Error(`Unknown import protocol: '${url.protocol}'`);
+          return null;
         },
       );
 
@@ -74,7 +49,7 @@ export function postcssPlugin(
         (args) => {
           const url = new URL(args.path, args.importer);
 
-          if (CSS_REGEX.test(url.pathname) || ASSETS_REGEX.test(url.pathname)) {
+          if (isCss(url.pathname) || isAssert(url.pathname)) {
             if (url.protocol === "http:" || url.protocol === "https:") {
               return { path: url.href, namespace: "postcss-remote-source" };
             }
@@ -87,54 +62,58 @@ export function postcssPlugin(
 
       // download remote css file
       build.onLoad(
-        { filter: CSS_REGEX, namespace: "postcss-remote-source" },
+        { filter: /.*/, namespace: "postcss-remote-source" },
         async (args) => {
-          const response = await downloadResouceWithCache(args.path);
-          const source = await response.text();
-          const result = await processor.process(source, { from: args.path });
+          if (isCss(args.path)) {
+            const response = await downloadResouceWithCache(args.path);
+            const source = await response.text();
+            const result = await processor.process(source, { from: args.path });
 
-          return {
-            loader: "css",
-            contents: result.css,
-            warnings: result.warnings().map((warn) => ({
-              text: warn.text,
-              location: { line: warn.line, column: warn.column },
-              detail: warn,
-            })),
-          };
-        },
-      );
+            return {
+              loader: "css",
+              contents: result.css,
+              warnings: result.warnings().map((warn) => ({
+                text: warn.text,
+                location: { line: warn.line, column: warn.column },
+                detail: warn,
+              })),
+            };
+          }
 
-      // download remote assets file
-      build.onLoad(
-        { filter: ASSETS_REGEX, namespace: "postcss-remote-source" },
-        async (args) => {
-          const response = await downloadResouceWithCache(args.path);
-          const arrayBuffer = await response.arrayBuffer();
+          if (isAssert(args.path)) {
+            const response = await downloadResouceWithCache(args.path);
+            const arrayBuffer = await response.arrayBuffer();
 
-          return {
-            contents: new Uint8Array(arrayBuffer),
-            loader: "file",
-          };
+            return {
+              loader: "file",
+              contents: new Uint8Array(arrayBuffer),
+            };
+          }
+
+          return null;
         },
       );
 
       // load the css file with plugins
       build.onLoad(
-        { filter: CSS_REGEX, namespace: "file" },
+        { filter: /.*/, namespace: "file" },
         async (args) => {
-          const source = await Deno.readTextFile(args.path);
-          const result = await processor.process(source, { from: args.path });
+          if (isCss(args.path)) {
+            const source = await Deno.readTextFile(args.path);
+            const result = await processor.process(source, { from: args.path });
 
-          return {
-            loader: "css",
-            contents: result.css,
-            warnings: result.warnings().map((warn) => ({
-              text: warn.text,
-              location: { line: warn.line, column: warn.column },
-              detail: warn,
-            })),
-          };
+            return {
+              loader: "css",
+              contents: result.css,
+              warnings: result.warnings().map((warn) => ({
+                text: warn.text,
+                location: { line: warn.line, column: warn.column },
+                detail: warn,
+              })),
+            };
+          }
+
+          return null;
         },
       );
     },

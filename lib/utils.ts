@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { FunctionComponent } from "../deps.ts";
+import { ComponentType } from "../deps.ts";
 import { Action } from "./hooks/action.ts";
 import { Loader } from "./hooks/loader.ts";
 import { Middleware } from "./hooks/middleware.ts";
@@ -45,7 +45,7 @@ export type Module = {
 export type Dictionary = {
   action: Map<ActionReference, Action<any>>;
   loader: Map<LoaderReference, Loader<any>>;
-  components: Map<ComponentReference, FunctionComponent>;
+  components: Map<ComponentReference, ComponentType>;
   middlewares: Map<MiddlewareReference, Middleware>;
   /** "cccccccc" => "file:///project/component.tsx" */
   componentUrls: Map<ComponentReference, string>;
@@ -100,42 +100,30 @@ export function getRoutePathComponent(dirname: string): RoutePathComponent {
 export async function sha256(message: string) {
   const encoder = new TextEncoder();
   const data = encoder.encode(message);
-  const key = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(key))
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  return new Uint8Array(digest);
 }
 
 export async function hash(message: string) {
-  return (await sha256(message)).slice(0, 8);
+  const array = Array.from(await sha256(message));
+  const string = String.fromCharCode.apply(null, array);
+  return btoa(string).slice(0, 12);
 }
 
-const JS_REGEX = /\.[jt]sx?$/i;
-const CSS_REGEX = /\.css$/i;
+const JS_REGEX = /^\.[jt]sx?$/i;
+const CSS_REGEX = /^\.(?:css|less|styl|s[ac]ss)$/i;
+const COMP_REGEX = /^\.(?:[jt]sx?|mdx?)$/i;
 
-export function isJavaScriptFile(filename: string) {
-  return JS_REGEX.test(filename);
+export function isJavaScriptFile(extname: string) {
+  return JS_REGEX.test(extname);
 }
 
-export function isCssFile(filename: string) {
-  return CSS_REGEX.test(filename);
+export function isComponentFile(extname: string) {
+  return COMP_REGEX.test(extname);
 }
 
-/**
- * Matches `loader.ts`, `loader.nick.tsx`, `loader.anything.else.ts`
- */
-export function filenameMatchesWithNickname(filename: string, target: string) {
-  return isJavaScriptFile(filename) && filename.startsWith(target + ".");
-}
-
-/**
- * Matches `root.ts`, `root.tsx`
- */
-export function filenameMatches(filename: string, target: string) {
-  return (
-    filename.startsWith(target) &&
-    isJavaScriptFile(filename.slice(target.length))
-  );
+export function isCssFile(extname: string) {
+  return CSS_REGEX.test(extname);
 }
 
 export function resolveDependencies(

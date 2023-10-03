@@ -1,6 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
 import { extname, renderToString, typeByExtension } from "../server-deps.ts";
-import { VNode } from "../deps.ts";
 
 import {
   ServerActionResponse,
@@ -30,7 +29,7 @@ const LOGO = `
                                    |___/ 
 `;
 
-export function createSlowCity(root: VNode, project: Project) {
+export function createSlowCity(project: Project) {
   console.log(LOGO);
 
   async function runAction(

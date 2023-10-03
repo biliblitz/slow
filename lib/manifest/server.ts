@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { FunctionComponent } from "../../deps.ts";
+import { ComponentType } from "../../deps.ts";
 import {
   BuiltFile,
   ComponentReference,
@@ -18,7 +18,7 @@ type ServerManifestOptions = {
   outlets: ComponentReference[];
   entryPath: BuiltFile;
   stylePath: BuiltFile | null;
-  components: Map<ComponentReference, FunctionComponent>;
+  components: Map<ComponentReference, ComponentType>;
 };
 
 export function createServerManifest(options: ServerManifestOptions): Manifest {

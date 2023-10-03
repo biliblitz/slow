@@ -19,4 +19,4 @@ const project = await buildSlowCity({
   ],
 });
 
-export default createSlowCity(<Root />, project);
+export default createSlowCity(project);

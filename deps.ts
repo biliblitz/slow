@@ -1,6 +1,7 @@
 // === SHARE ===
 export { createContext, render } from "preact";
-export type { ComponentChildren, FunctionComponent, JSX, VNode } from "preact";
+export type { ComponentChildren, ComponentType, JSX, VNode } from "preact";
+
 export {
   useCallback,
   useContext,
@@ -8,6 +9,7 @@ export {
   useMemo,
   useState,
 } from "preact/hooks";
+
 export {
   batch,
   useComputed,
