@@ -48,7 +48,11 @@ export async function buildSlowCity(options?: BuildSlowCityOptions) {
   );
   console.log(clientAssets);
 
-  await buildServerComponents(project.componentPaths);
+  const components = await buildServerComponents(
+    project.componentPaths,
+    replacements,
+  );
+  console.log(components);
 }
 
 function createReplacements(

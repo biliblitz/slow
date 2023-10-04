@@ -8,6 +8,7 @@
     "dev": "deno run -A --watch=app start.ts",
     "start": "deno run -A start.ts"
   },
+  "lock": false,
   "imports": {
     "slow": "./mod.ts",
     "slow/server": "./server.ts",
