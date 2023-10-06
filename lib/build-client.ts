@@ -1,21 +1,22 @@
-import { ComponentType } from "../deps.ts";
 import {
   denoPlugins,
   dirname,
   esbuild,
+  join,
   mdxPlugin,
   resolve,
-  toFileUrl,
 } from "../server-deps.ts";
+import { BuildSlowCityOptions } from "./build-common.ts";
 import { postcssPlugin } from "./esbuild/postcss.ts";
 import { replacePlugin } from "./esbuild/replace.ts";
 import { isMdx } from "./utils/ext.ts";
 
 export async function buildClientAssets(
-  entryPoint: string,
+  options: BuildSlowCityOptions,
   componentPaths: string[],
   replacements: Map<string, string | Uint8Array>,
 ) {
+  const entryPoint = join(options.dir!, "entry.client.tsx");
   const entryPoints = [
     resolve(entryPoint),
     ...componentPaths,
@@ -23,8 +24,8 @@ export async function buildClientAssets(
 
   const results = await esbuild.build({
     plugins: [
-      mdxPlugin({ jsxImportSource: "preact" }),
-      postcssPlugin({ plugins: [] }),
+      mdxPlugin({ jsxImportSource: "preact", ...options.mdxOptions }),
+      postcssPlugin({ plugins: options.postcssPlugins }),
       {
         name: "resolve-mdx",
         setup(build) {

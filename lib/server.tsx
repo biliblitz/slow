@@ -17,8 +17,8 @@ import {
 } from "./route.ts";
 import { ManifestContext, PageData } from "./manifest/index.ts";
 import { createServerManifest } from "./manifest/server.ts";
-import { Project } from "./build.ts";
 import { RequestEvent } from "./hooks/mod.ts";
+import { VNode } from "../deps.ts";
 
 const LOGO = `
  ____  _                ____ _ _         
@@ -29,7 +29,7 @@ const LOGO = `
                                    |___/ 
 `;
 
-export function createSlowCity(project: Project) {
+export function createSlowCity(project: Project, vnode: VNode) {
   console.log(LOGO);
 
   async function runAction(
@@ -95,7 +95,7 @@ export function createSlowCity(project: Project) {
 
       const html = renderToString(
         <ManifestContext.Provider value={manifest}>
-          {root}
+          {vnode}
         </ManifestContext.Provider>,
       );
 

@@ -6,7 +6,7 @@
   },
   "tasks": {
     "dev": "deno run -A --watch=app start.ts",
-    "start": "deno run -A start.ts"
+    "start": "deno run -A --reload=http://localhost:8029 start.ts"
   },
   "lock": false,
   "imports": {

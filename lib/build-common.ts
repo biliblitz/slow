@@ -1,4 +1,4 @@
-import { esbuild, join, postcss, resolve } from "../server-deps.ts";
+import { esbuild, join, mdx, postcss, resolve } from "../server-deps.ts";
 import { buildClientAssets } from "./build-client.ts";
 import {
   buildServerActions,
@@ -10,18 +10,17 @@ import { ActionInternal } from "./hooks/action.ts";
 import { LoaderInternal } from "./hooks/loader.ts";
 import { scanProject } from "./scan.ts";
 
-export type BuildSlowCityOptions = {
-  dir?: string;
-  esbuildPlugins?: esbuild.Plugin[];
-  postcssPlugins?: postcss.AcceptedPlugin[];
-};
+export type BuildSlowCityOptions = Partial<{
+  dir: string;
+  esbuildPlugins: esbuild.Plugin[];
+  postcssPlugins: postcss.AcceptedPlugin[];
+  mdxOptions: mdx.CompileOptions & mdx.ProcessorOptions;
+}>;
 
-export async function buildSlowCity(options?: BuildSlowCityOptions) {
-  options ??= {};
-  options.dir ??= "./app";
-  options.dir = resolve(options.dir);
-  options.esbuildPlugins ??= [];
-  options.postcssPlugins ??= [];
+export async function buildSlowCity(
+  options: BuildSlowCityOptions = {},
+) {
+  options.dir = resolve(options.dir ?? "./app");
 
   const project = await scanProject(join(options.dir, "routes"));
   console.log(project);
@@ -42,13 +41,14 @@ export async function buildSlowCity(options?: BuildSlowCityOptions) {
   );
 
   const clientAssets = await buildClientAssets(
-    "./app/entry.client.tsx",
+    options,
     project.componentPaths,
     replacements,
   );
   console.log(clientAssets);
 
   const components = await buildServerComponents(
+    options,
     project.componentPaths,
     replacements,
   );

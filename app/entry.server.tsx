@@ -9,14 +9,10 @@ import postcssPresetEnv from "npm:postcss-preset-env@9.1.3";
 // postcss plugins & esbuild plugins should put here!
 const project = await buildSlowCity({
   postcssPlugins: [
-    // Note: A tailwind.config.js is not required
-    tailwindcss({
-      content: ["./app/**/*.{ts,tsx}"],
-      theme: { extend: {} },
-      plugins: [],
-    }),
+    tailwindcss(),
     postcssPresetEnv(),
   ],
+  esbuildPlugins: [],
 });
 
-export default createSlowCity(project);
+export default createSlowCity(project, <Root />);

@@ -1,7 +1,9 @@
 import { extname, mdx, resolve } from "../server-deps.ts";
+import { BuildSlowCityOptions } from "./build-common.ts";
 import { isCss, isJs, isMdx } from "./utils/ext.ts";
 
 export function createTranspileServer(
+  options: BuildSlowCityOptions,
   replacements: Map<string, string>,
   port: number,
 ) {
@@ -26,7 +28,6 @@ export function createTranspileServer(
     }
 
     if (replacements.has(path)) {
-      console.log("replacement hit!");
       return new Response(replacements.get(path), {
         status: 200,
         headers: { "content-type": "text/javascript; charset=utf-8" },
@@ -49,7 +50,10 @@ export function createTranspileServer(
 
       if (isMdx(path)) {
         const text = await Deno.readTextFile(path);
-        const vfile = await mdx.compile(text, { jsxImportSource: "preact" });
+        const vfile = await mdx.compile(text, {
+          jsxImportSource: "preact",
+          ...options.mdxOptions,
+        });
 
         return new Response(vfile.value, {
           status: 200,
@@ -59,12 +63,12 @@ export function createTranspileServer(
 
       if (isJs(path)) {
         const contents = await Deno.readFile(path);
-        const isT = extname(path).includes("t");
+        const isTypeScript = extname(path).includes("t");
 
         return new Response(contents, {
           status: 200,
           headers: {
-            "content-type": isT
+            "content-type": isTypeScript
               ? "text/typescript; charset=utf-8"
               : "text/javascript; charset=utf-8",
           },

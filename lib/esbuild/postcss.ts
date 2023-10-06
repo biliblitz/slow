@@ -13,9 +13,9 @@ async function downloadResouceWithCache(url: string) {
 }
 
 export function postcssPlugin(
-  options: { plugins: postcss.AcceptedPlugin[] },
+  options: { plugins?: postcss.AcceptedPlugin[] },
 ): esbuild.Plugin {
-  const processor = postcss(options?.plugins);
+  const processor = postcss(options?.plugins || []);
 
   return {
     name: "postcss",
