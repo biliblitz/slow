@@ -10,7 +10,10 @@ export function Link(props: LinkProps) {
 
   return (
     <a
-      onClick={(e) => (e.preventDefault(), navigate(e.currentTarget.href))}
+      onClick={(e) => {
+        e.preventDefault();
+        navigate(e.currentTarget.href);
+      }}
       {...props}
     />
   );

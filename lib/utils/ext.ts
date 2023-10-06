@@ -1,4 +1,7 @@
-import { extname } from "../../server-deps.ts";
+function extname(filename: string) {
+  const index = filename.lastIndexOf(".");
+  return index > -1 ? filename.slice(index) : filename;
+}
 
 const JAVASCRIPT_FILE_EXTENSIONS = [
   ".js",
@@ -46,10 +49,13 @@ const IMAGE_FILE_EXTENSIONS = [
   ".avif",
 ];
 
-const MEDIA_FILE_EXTENSIONS = [
+const VIDEO_FILE_EXTENSIONS = [
+  ".ogg",
   ".mp4",
   ".webm",
-  ".ogg",
+];
+
+const AUDIO_FILE_EXTENSIONS = [
   ".mp3",
   ".wav",
   ".flac",
@@ -83,9 +89,36 @@ export function isCss(filename: string) {
   return STYLE_FILE_EXTENSIONS.includes(extname(filename));
 }
 
+export function isImage(filename: string) {
+  return IMAGE_FILE_EXTENSIONS.includes(extname(filename));
+}
+
+export function isFont(filename: string) {
+  return FONT_FILE_EXTENSIONS.includes(extname(filename));
+}
+
+export function isAudio(filename: string) {
+  return AUDIO_FILE_EXTENSIONS.includes(extname(filename));
+}
+
+export function isVideo(filename: string) {
+  return VIDEO_FILE_EXTENSIONS.includes(extname(filename));
+}
+
 export function isAssert(filename: string) {
   const ext = extname(filename);
   return IMAGE_FILE_EXTENSIONS.includes(ext) ||
-    MEDIA_FILE_EXTENSIONS.includes(ext) ||
+    AUDIO_FILE_EXTENSIONS.includes(ext) ||
+    VIDEO_FILE_EXTENSIONS.includes(ext) ||
     FONT_FILE_EXTENSIONS.includes(ext);
+}
+
+export function getLinkPreloadAs(filename: string) {
+  if (isJs(filename)) return "script";
+  if (isCss(filename)) return "style";
+  if (isFont(filename)) return "font";
+  if (isImage(filename)) return "image";
+  if (isAudio(filename)) return "audio";
+  if (isVideo(filename)) return "video";
+  console.error("Unknown preload file type: ", filename);
 }

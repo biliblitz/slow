@@ -1,46 +1,42 @@
-import { createContext, useContext } from "../../deps.ts";
-import { serializeManifest, useManifest } from "../manifest/index.ts";
-import { ComponentReference } from "../utils.ts";
+import {
+  createContext,
+  ReadonlySignal,
+  signal,
+  useComputed,
+  useContext,
+} from "../../deps.ts";
+import { useManifest } from "../manifest/context.tsx";
+import { ManifestInjector } from "../manifest/injector.tsx";
+import { useRuntime } from "../runtime/context.ts";
 import { useRouter } from "./router.tsx";
 
-function ManifestSerializer() {
-  const manifest = useManifest();
-
-  return (
-    <script
-      type="application/json"
-      data-slow
-      dangerouslySetInnerHTML={{ __html: serializeManifest(manifest) }}
-    />
-  );
-}
-
-const OutletContext = createContext<ComponentReference[]>([]);
+const OutletContext = createContext<ReadonlySignal<number[]>>(signal([]));
 
 export function RouterOutlet() {
   const manifest = useManifest();
   const router = useRouter();
 
-  const entryUrl = manifest.basePath + manifest.entryPath;
+  const entryPath = manifest.basePath +
+    manifest.assetNames[manifest.entryIndex];
 
   return (
-    <OutletContext.Provider value={router.outlets.value}>
+    <OutletContext.Provider value={router.outlets}>
       <Outlet />
-      <ManifestSerializer />
-      <script type="module" src={entryUrl}></script>
+      <ManifestInjector />
+      <script type="module" src={entryPath}></script>
     </OutletContext.Provider>
   );
 }
 
 export function Outlet() {
-  const manifest = useManifest();
+  const runtime = useRuntime();
   const outlets = useContext(OutletContext);
+  const children = useComputed(() => outlets.value.slice(1));
 
-  if (outlets.length > 0) {
-    const [current, ...remains] = outlets;
-    const Component = manifest.components.get(current)!;
+  if (outlets.value.length > 0) {
+    const Component = runtime.getComponent(outlets.value[0]);
     return (
-      <OutletContext.Provider value={remains}>
+      <OutletContext.Provider value={children}>
         <Component />
       </OutletContext.Provider>
     );

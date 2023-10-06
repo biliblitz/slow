@@ -1,7 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
 import { batch, useComputed, useSignal } from "../../deps.ts";
 import { useRouter } from "../components/router.tsx";
-import { ServerActionResponse, ServerErrorResponse } from "../utils.ts";
+import { useRuntime } from "../runtime/context.ts";
+import { ServerActionResponse } from "../utils.ts";
 import { ActionState } from "./action.ts";
 
 export type RequestEvent = {
@@ -20,8 +21,8 @@ export type RequestEvent = {
 };
 
 export function useLoader(ref: string) {
-  const router = useRouter();
-  return useComputed(() => router.loaders.value.get(ref) || null);
+  const runtime = useRuntime();
+  return useComputed(() => new Map(runtime.loaders));
 }
 
 export function useAction(ref: string) {

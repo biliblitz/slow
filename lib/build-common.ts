@@ -8,6 +8,7 @@ import {
 } from "./build-server.ts";
 import { ActionInternal } from "./hooks/action.ts";
 import { LoaderInternal } from "./hooks/loader.ts";
+import { createServerManifest } from "./manifest/server.ts";
 import { scanProject } from "./scan.ts";
 
 export type BuildSlowCityOptions = Partial<{
@@ -45,41 +46,49 @@ export async function buildSlowCity(
     project.componentPaths,
     replacements,
   );
-  console.log(clientAssets);
 
   const components = await buildServerComponents(
     options,
     project.componentPaths,
     replacements,
   );
-  console.log(components);
+
+  const manifest = createServerManifest(project, clientAssets);
+
+  return {
+    loaders,
+    actions,
+    manifest,
+    middlewares,
+    components,
+  };
 }
 
 function createReplacements(
   loaderPaths: string[],
   actionPaths: string[],
-  loaders: [string, LoaderInternal][][],
-  actions: [string, ActionInternal][][],
+  loaders: LoaderInternal[][],
+  actions: ActionInternal[][],
 ) {
   return new Map([
     ...loaderPaths.map((path, index) => {
       const contents = [
+        `// loader: ${path}`,
         `import { __internals } from "slow";`,
-        ...loaders[index].map(([name, loader]) =>
-          `export const ${name} = () => __internals.useLoader("${loader.__ref}");`
+        ...loaders[index].map((loader) =>
+          `export const ${loader.name} = () => __internals.useLoader("${loader.ref}");`
         ),
       ].join("\n");
-      console.log(path, "=>", contents);
       return [path, contents] as [string, string];
     }),
     ...actionPaths.map((path, index) => {
       const contents = [
+        `// action: ${path}`,
         `import { __internals } from "slow";`,
-        ...actions[index].map(([name, loader]) =>
-          `export const ${name} = () => __internals.useAction("${loader.__ref}");`
+        ...actions[index].map((action) =>
+          `export const ${action.name} = () => __internals.useAction("${action.ref}");`
         ),
       ].join("\n");
-      console.log(path, "=>", contents);
       return [path, contents] as [string, string];
     }),
   ]);

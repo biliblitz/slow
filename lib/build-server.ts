@@ -14,8 +14,9 @@ export async function buildServerLoaders(loaderPaths: string[]) {
         .map(async ([name, loader_]) => {
           const loader = loader_ as LoaderInternal;
           const ref = await hash(`loader-${index}-${name}`);
-          loader.__ref = ref;
-          return [name, loader] as [string, LoaderInternal];
+          loader.ref = ref;
+          loader.name = name;
+          return loader;
         }),
     );
     return loaders;
@@ -30,8 +31,9 @@ export async function buildServerActions(actionPaths: string[]) {
         .map(async ([name, action_]) => {
           const action = action_ as ActionInternal;
           const ref = await hash(`action-${index}-${name}`);
-          action.__ref = ref;
-          return [name, action] as [string, ActionInternal];
+          action.ref = ref;
+          action.name = name;
+          return action;
         }),
     );
     return actions;

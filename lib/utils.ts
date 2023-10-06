@@ -4,7 +4,6 @@ import { ComponentType } from "../deps.ts";
 import { Action } from "./hooks/action.ts";
 import { Loader } from "./hooks/loader.ts";
 import { Middleware } from "./hooks/middleware.ts";
-import { PageData } from "./manifest/index.ts";
 
 export type ActionReference = string;
 export type LoaderReference = string;

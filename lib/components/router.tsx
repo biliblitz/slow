@@ -2,61 +2,104 @@
 import {
   batch,
   ComponentChildren,
+  ComponentType,
   createContext,
   ReadonlySignal,
   useComputed,
-  useContext,
   useEffect,
+  useRef,
   useSignal,
 } from "../../deps.ts";
-import { importComponents } from "../manifest/client.ts";
-import { PageData, useManifest } from "../manifest/index.ts";
-import { ComponentReference, ServerDataResponse } from "../utils.ts";
+import { useManifest } from "../manifest/context.tsx";
+import { Manifest } from "../manifest/mod.ts";
+import { LoaderStore, ServerResponse } from "../utils/api.ts";
+import { useContextOrThrows } from "../utils/hooks.ts";
+import { matchEntry } from "../utils/match.ts";
 
 type Navigate = (href: string) => Promise<void>;
+type Render = (pathname: string, loaders: LoaderStore) => Promise<void>;
+
 type Router = {
-  params: ReadonlySignal<ReadonlyMap<string, string>>;
-  loaders: ReadonlySignal<ReadonlyMap<string, any>>;
-  outlets: ReadonlySignal<ComponentReference[]>;
-  preloads: ReadonlySignal<ComponentReference[]>;
+  preloads: ReadonlySignal<number[]>;
+  outlets: ReadonlySignal<number[]>;
+  store: ReadonlySignal<ReadonlyMap<string, any>>;
   navigate: Navigate;
-  render(data: PageData): Promise<void>;
+  render: Render;
 };
+
 type HistoryState = {
-  data: PageData;
+  loaders: LoaderStore;
   scroll: [number, number];
 };
 
 const RouterContext = createContext<Router | null>(null);
 
-function compareStringArray(a: string[], b: string[]) {
-  return JSON.stringify(a) === JSON.stringify(b);
+function replaceState(state: Partial<HistoryState>) {
+  history.replaceState({ ...history.state, ...state }, "");
 }
 
-export function RouterProvider(props: { children?: ComponentChildren }) {
+function pushState(state: HistoryState, url: string | URL) {
+  history.pushState(state, "", url);
+}
+
+async function importComponent(
+  manifest: Manifest,
+  components: ComponentType[],
+  index: number,
+) {
+  if (index in components) {
+    return components[index];
+  }
+  const path = manifest.basePath +
+    manifest.assetNames[manifest.componentIndexes[index]];
+  const { default: component } = await import(path);
+  components[index] = component as ComponentType;
+}
+
+async function importComponents(
+  manifest: Manifest,
+  components: ComponentType[],
+  indexes: number[],
+) {
+  await Promise.all(
+    indexes.map((index) => {
+      return importComponent(manifest, components, index);
+    }),
+  );
+}
+
+type RouterProviderProps = {
+  components: ComponentType[];
+  loaders: LoaderStore;
+  children?: ComponentChildren;
+};
+
+export function RouterProvider(props: RouterProviderProps) {
   const manifest = useManifest();
 
-  const outlets = useSignal(manifest.outlets);
-  const preloads = useSignal(manifest.outlets);
-  const params = useSignal(manifest.params);
-  const loaders = useSignal(manifest.loaders);
+  const loaders = useSignal(props.loaders);
+  const components = useRef(props.components);
 
-  /** Update current page or  */
-  const render = async (data: PageData) => {
-    // start preload modules
-    preloads.value = data.outlets;
-    // import components
-    await importComponents(manifest, data.outlets);
-    // push history
-    // start render whole page
+  const preloads = useSignal<number[]>([]);
+  const outlets = useSignal<number[]>([]);
+
+  const render = async (pathname: string, store: LoaderStore) => {
+    const entry = matchEntry(manifest.entries, pathname);
+    if (!entry) {
+      console.error("Navigation 404!!");
+      return;
+    }
+
+    // Start preload modules
+    preloads.value = entry.components;
+
+    // Import every components
+    await importComponents(manifest, components.current, entry.components);
+
+    // Trigger render
     batch(() => {
-      // update actions & loaders & params
-      params.value = Array.from(new Map(params.value.concat(data.params)));
-      loaders.value = Array.from(new Map(loaders.value.concat(data.loaders)));
-      // update outlets
-      if (!compareStringArray(outlets.value, data.outlets)) {
-        outlets.value = data.outlets;
-      }
+      loaders.value = store;
+      outlets.value = entry.components;
     });
   };
 
@@ -71,9 +114,8 @@ export function RouterProvider(props: { children?: ComponentChildren }) {
 
       // check if is hash update
       if (targetAnchor !== originAnchor && targetAnchor) {
-        const targetElem = document.getElementById(targetAnchor.slice(1));
-        targetElem?.scrollIntoView({ behavior: "smooth" });
-        // history.pushState({ url: location.href }, "", targetUrl);
+        document.getElementById(targetAnchor.slice(1))
+          ?.scrollIntoView({ behavior: "smooth" });
         return;
       }
 
@@ -91,59 +133,52 @@ export function RouterProvider(props: { children?: ComponentChildren }) {
     dataUrl.pathname += "s-data.json";
     // now sending request to dataUrl
     const response = await fetch(dataUrl);
-    const data = await response.json() as ServerDataResponse;
+    const data = await response.json() as ServerResponse;
 
     if (data.ok === "data") {
       // save current scroll before leave
-      history.replaceState(
-        { ...history.state, scroll: [scrollX, scrollY] },
-        "",
-      );
-      history.pushState({ data: data.data, scroll: [0, 0] }, "", targetUrl);
+      replaceState({ scroll: [scrollX, scrollY] });
+      pushState({ loaders: data.loaders, scroll: [0, 0] }, targetUrl);
       // update DOM due to data
-      await render(data.data);
+      await render(targetUrl.pathname, data.loaders);
     } else if (data.ok === "redirect") {
       await navigate(data.redirect);
     }
   };
 
-  const router = {
-    params: useComputed(() => new Map(params.value)),
-    loaders: useComputed(() => new Map(loaders.value)),
-    outlets,
-    preloads,
-    navigate,
-    render,
-  } satisfies Router;
-
   useEffect(() => {
-    const initialData: PageData = {
-      loaders: manifest.loaders,
-      params: manifest.params,
-      outlets: manifest.outlets,
-    };
-    history.replaceState({ data: initialData, scroll: [0, 0] }, "");
+    // TODO
+    replaceState({});
 
     addEventListener("popstate", async (e) => {
       const state = e.state as HistoryState;
-      await render(state.data);
+      await render(location.pathname, state.loaders);
       scrollTo(state.scroll[0], state.scroll[1]);
     });
   }, []);
 
+  const store = useComputed(() => new Map(loaders.value));
+
   return (
-    <RouterContext.Provider value={router}>
+    <RouterContext.Provider
+      value={{
+        preloads,
+        outlets,
+        navigate,
+        render,
+        store,
+      }}
+    >
       {props.children}
     </RouterContext.Provider>
   );
 }
 
 export function useRouter() {
-  const router = useContext(RouterContext);
-  if (!router) {
-    throw new Error("Please nest your project inside <SlowCityProvider />");
-  }
-  return router;
+  return useContextOrThrows(
+    RouterContext,
+    "Please nest your project inside <SlowCityProvider />",
+  );
 }
 
 export function useNavigate() {

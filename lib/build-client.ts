@@ -69,25 +69,25 @@ export async function buildClientAssets(
     .values(results.metafile.outputs)
     .map((output) => {
       const deps = output.imports.map(({ path }) => assets.indexOf(path));
-      if (output.cssBundle) {
-        deps.push(assets.indexOf(output.cssBundle));
-      }
+      if (output.cssBundle) deps.push(assets.indexOf(output.cssBundle));
       return deps;
     });
 
-  const [entryURL, ...componentURLs] = Object
+  const [entryIndex, ...componentIndexes] = Object
     .entries(results.metafile.outputs)
     .filter(([_, output]) => output.entryPoint)
     .sort((a, b) =>
       entryPoints.indexOf(resolve(a[1].entryPoint!)) -
       entryPoints.indexOf(resolve(b[1].entryPoint!))
     )
-    .map(([name, _]) => name);
+    .map(([name, _]) => assets.indexOf(name));
 
   return {
     assets,
-    entryURL,
-    componentURLs,
+    entryIndex,
+    componentIndexes,
     assetsDependencyGraph,
   };
 }
+
+export type ClientAssets = Awaited<ReturnType<typeof buildClientAssets>>;

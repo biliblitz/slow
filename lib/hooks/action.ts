@@ -12,14 +12,16 @@ export type ActionState<T> = {
 };
 export type Action<T = any> = () => ActionState<T>;
 export interface ActionInternal<T = any> {
-  __ref: string;
-  __func: ActionFunction<T>;
+  ref: string;
+  name: string;
+  func: ActionFunction<T>;
 }
 
 export function action$<T>(actionFn: ActionFunction<T>): Action<T> {
   const internal: ActionInternal<T> = {
-    __ref: "",
-    __func: actionFn,
+    ref: "",
+    name: "",
+    func: actionFn,
   };
   // we does not return action itself in code
   // we will do a magic replacement in building process.

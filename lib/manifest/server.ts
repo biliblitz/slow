@@ -1,36 +1,17 @@
-// deno-lint-ignore-file no-explicit-any
-import { ComponentType } from "../../deps.ts";
-import {
-  BuiltFile,
-  ComponentReference,
-  Dictionary,
-  LoaderReference,
-} from "../utils.ts";
-import { Manifest } from "./index.ts";
+import { ClientAssets } from "../build-client.ts";
+import { Project } from "../scan.ts";
+import { Manifest } from "./mod.ts";
 
-type ComponentImports = Dictionary["componentImports"];
-
-type ServerManifestOptions = {
-  graph: Map<BuiltFile, BuiltFile[]>;
-  params: [string, string][];
-  imports: ComponentImports;
-  loaders: [LoaderReference, any][];
-  outlets: ComponentReference[];
-  entryPath: BuiltFile;
-  stylePath: BuiltFile | null;
-  components: Map<ComponentReference, ComponentType>;
-};
-
-export function createServerManifest(options: ServerManifestOptions): Manifest {
+export function createServerManifest(
+  project: Project,
+  assets: ClientAssets,
+): Manifest {
   return {
-    graph: options.graph,
-    params: options.params,
-    loaders: options.loaders,
-    imports: options.imports,
-    outlets: options.outlets,
+    entries: project.entires,
     basePath: "/",
-    entryPath: options.entryPath,
-    stylePath: options.stylePath,
-    components: options.components,
+    entryIndex: assets.entryIndex,
+    assetNames: assets.assets,
+    assetGraph: assets.assetsDependencyGraph,
+    componentIndexes: assets.componentIndexes,
   };
 }

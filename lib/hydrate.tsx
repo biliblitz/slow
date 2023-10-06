@@ -1,15 +1,14 @@
 import { render, VNode } from "../deps.ts";
-import { createClientManifest, importComponents } from "./manifest/client.ts";
-import { ManifestContext } from "./manifest/index.ts";
+import { createClientManifest } from "./manifest/client.ts";
+import { ManifestProvider } from "./manifest/context.tsx";
 
-export async function hydrate(root: VNode) {
+export function hydrate(root: VNode) {
   const manifest = createClientManifest();
-  await importComponents(manifest, manifest.outlets);
 
   render(
-    <ManifestContext.Provider value={manifest}>
+    <ManifestProvider manifest={manifest}>
       {root}
-    </ManifestContext.Provider>,
+    </ManifestProvider>,
     document,
     document.documentElement,
   );

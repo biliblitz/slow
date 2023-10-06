@@ -76,33 +76,33 @@ function getRouteLevel(dir: string) {
 }
 
 function getRouteRegex(dirs: string[]) {
-  let regex = "";
+  let exp = "";
   const params = [];
 
   for (const dir of dirs) {
     if (dir === "[...]") {
-      regex += "/(.+)";
+      exp += "/(.+)";
       params.push("$");
     } else if (dir.startsWith("[") && dir.endsWith("]")) {
-      regex += "/([^/]+)";
+      exp += "/([^/]+)";
       params.push(dir.slice(1, -1));
     } else if (dir.startsWith("(") && dir.endsWith(")")) {
-      regex += "";
+      exp += "";
     } else {
-      regex += "/" + escapeRegex(encodeURIComponent(dir));
+      exp += "/" + escapeRegex(encodeURIComponent(dir));
     }
   }
 
   // Add a optional trailing slash
-  regex += "/?";
-  regex = "^" + regex + "$";
-
+  exp += "/?";
+  exp = "^" + exp + "$";
+  const regex = new RegExp(exp, "i");
   return { regex, params };
 }
 
-type Entry = {
+export type Entry = {
   components: number[];
-  regex: string;
+  regex: RegExp;
   params: string[];
   loaders: number[];
   middlewares: number[];
@@ -256,4 +256,4 @@ export async function scanProject(entrance: string) {
   };
 }
 
-export type ScanResult = Awaited<ReturnType<typeof scanProject>>;
+export type Project = Awaited<ReturnType<typeof scanProject>>;
