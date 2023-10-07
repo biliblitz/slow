@@ -1,4 +1,4 @@
-import { Outlet } from "slow";
+import { Outlet } from "blitz";
 
 import "./test.css";
 import "./global.css";

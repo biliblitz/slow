@@ -6,13 +6,13 @@ import {
   mdxPlugin,
   resolve,
 } from "../server-deps.ts";
-import { BuildSlowCityOptions } from "./build-common.ts";
+import { BuildBlitzCityOptions } from "./build-common.ts";
 import { postcssPlugin } from "./esbuild/postcss.ts";
 import { replacePlugin } from "./esbuild/replace.ts";
 import { isMdx } from "./utils/ext.ts";
 
 export async function buildClientAssets(
-  options: BuildSlowCityOptions,
+  options: BuildBlitzCityOptions,
   componentPaths: string[],
   replacements: Map<string, string | Uint8Array>,
 ) {

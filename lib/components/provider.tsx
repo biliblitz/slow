@@ -1,7 +1,7 @@
 import { JSX } from "../../deps.ts";
 import { RouterProvider } from "./router.tsx";
 
-export function SlowCityProvider(
+export function BlitzCityProvider(
   props: JSX.HTMLAttributes<HTMLHtmlElement>,
 ) {
   return (

@@ -10,8 +10,8 @@
   },
   "lock": false,
   "imports": {
-    "slow": "./mod.ts",
-    "slow/server": "./server.ts",
+    "blitz": "./mod.ts",
+    "blitz/server": "./server.ts",
     "preact": "https://esm.sh/preact@10.17.1",
     "preact/": "https://esm.sh/preact@10.17.1/",
     "@preact/signals": "https://esm.sh/@preact/signals@1.2.1",

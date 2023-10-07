@@ -1,6 +1,6 @@
 import { ComponentType } from "../deps.ts";
 import { extname, mdx, resolve, toFileUrl } from "../server-deps.ts";
-import { BuildSlowCityOptions } from "./build-common.ts";
+import { BuildBlitzCityOptions } from "./build-common.ts";
 import { ActionInternal } from "./hooks/action.ts";
 import { LoaderInternal } from "./hooks/loader.ts";
 import { Middleware } from "./hooks/middleware.ts";
@@ -49,7 +49,7 @@ export async function buildServerMiddlewares(middlewarePaths: string[]) {
 }
 
 export async function buildServerComponents(
-  options: BuildSlowCityOptions,
+  options: BuildBlitzCityOptions,
   componentPaths: string[],
   replacements: Map<string, string>,
 ) {
@@ -69,7 +69,7 @@ export async function buildServerComponents(
       return new Response(
         "flag{vQO0tHUU2lWhaukR7ig0fljiMtsiAotOhHyBvfjduFYCxfC3k4aXAn1vNDrYXq7S}\n" +
           "\n" +
-          "Submit your flag to https://github.com/biliblitz/slow/issues and win a prize!",
+          "Submit your flag to https://github.com/biliblitz/blitz/issues and win a prize!",
         { headers: { "content-type": "text/plain; charset=utf-8" } },
       );
     }

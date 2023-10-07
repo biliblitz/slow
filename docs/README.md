@@ -1,8 +1,8 @@
-# Slow City
+# Blitz City
 
-Slow City is a brand new Meta-framework for Deno with Preact.
+Blitz City is a brand new Meta-framework for Deno with Preact.
 
-If you know Qwik City / Remix, you should get familiar with Slow City.
+If you know Qwik City / Remix, you should get familiar with Blitz City.
 
 ## Installation
 

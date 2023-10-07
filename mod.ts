@@ -2,12 +2,12 @@ export { action$ } from "./lib/hooks/action.ts";
 export { loader$ } from "./lib/hooks/loader.ts";
 export { middleware$ } from "./lib/hooks/middleware.ts";
 export {
+  BlitzCityProvider,
   Form,
   Link,
   Outlet,
   RouterHead,
   RouterOutlet,
-  SlowCityProvider,
 } from "./lib/components.tsx";
 export { hydrate } from "./lib/hydrate.tsx";
 export { useCatchAllParam, useParam } from "./lib/hooks/mod.ts";

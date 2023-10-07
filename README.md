@@ -1,4 +1,4 @@
-# Slow City
+# Blitz City
 
 A full-stack framework for Deno.
 

@@ -1,10 +1,10 @@
-import { SlowCity } from "../build-common.ts";
+import { BlitzCity } from "../build-common.ts";
 import { LoaderStore } from "../utils/api.ts";
 import { Match } from "../utils/entry.ts";
 import { Manifest } from "./mod.ts";
 
 export function createServerManifest(
-  city: SlowCity,
+  city: BlitzCity,
   match: Match,
   store: LoaderStore,
 ): Manifest {

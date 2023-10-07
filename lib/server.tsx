@@ -1,6 +1,6 @@
 import { VNode } from "../deps.ts";
 import { extname, renderToString, typeByExtension } from "../server-deps.ts";
-import { SlowCity } from "./build-common.ts";
+import { BlitzCity } from "./build-common.ts";
 import { RequestEvent } from "./hooks/mod.ts";
 import { ManifestProvider } from "./manifest/context.tsx";
 import { createServerManifest } from "./manifest/server.ts";
@@ -16,7 +16,7 @@ const LOGO = `
                                    |___/ 
 `;
 
-export function createSlowCity(city: SlowCity, vnode: VNode) {
+export function createBlitzCity(city: BlitzCity, vnode: VNode) {
   console.log(LOGO);
 
   async function runMiddleware(event: RequestEvent, middlewares: number[]) {

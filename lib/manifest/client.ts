@@ -66,7 +66,7 @@ export function deserializeManifest(shorten: ShortenManifest) {
 }
 
 // we cannot use symbol here
-export const ManifestInjectSymbol = "__slow_manifest__";
+export const ManifestInjectSymbol = "__blitz_manifest__";
 
 declare global {
   interface Window {

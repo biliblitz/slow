@@ -187,7 +187,7 @@ export function RouterProvider(props: RouterProviderProps) {
 export function useRouter() {
   return useContextOrThrows(
     RouterContext,
-    "Please nest your project inside <SlowCityProvider />",
+    "Please nest your project inside <BlitzCityProvider />",
   );
 }
 

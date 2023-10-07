@@ -10,15 +10,15 @@ import { ActionInternal } from "./hooks/action.ts";
 import { LoaderInternal } from "./hooks/loader.ts";
 import { scanProjectStructure } from "./scan.ts";
 
-export type BuildSlowCityOptions = Partial<{
+export type BuildBlitzCityOptions = Partial<{
   dir: string;
   esbuildPlugins: esbuild.Plugin[];
   postcssPlugins: postcss.AcceptedPlugin[];
   mdxOptions: mdx.CompileOptions & mdx.ProcessorOptions;
 }>;
 
-export async function buildSlowCity(
-  options: BuildSlowCityOptions = {},
+export async function buildBlitzCity(
+  options: BuildBlitzCityOptions = {},
 ) {
   options.dir = resolve(options.dir ?? "./app");
 
@@ -57,7 +57,7 @@ export async function buildSlowCity(
   };
 }
 
-export type SlowCity = Awaited<ReturnType<typeof buildSlowCity>>;
+export type BlitzCity = Awaited<ReturnType<typeof buildBlitzCity>>;
 
 function createReplacements(
   loaderPaths: string[],
@@ -69,7 +69,7 @@ function createReplacements(
     ...loaderPaths.map((path, index) => {
       const contents = [
         `// loader: ${path}`,
-        `import { __internals } from "slow";`,
+        `import { __internals } from "blitz";`,
         ...loaders[index].map((loader) =>
           `export const ${loader.name} = () => __internals.useLoader("${loader.ref}");`
         ),
@@ -79,7 +79,7 @@ function createReplacements(
     ...actionPaths.map((path, index) => {
       const contents = [
         `// action: ${path}`,
-        `import { __internals } from "slow";`,
+        `import { __internals } from "blitz";`,
         ...actions[index].map((action) =>
           `export const ${action.name} = () => __internals.useAction("${action.ref}");`
         ),

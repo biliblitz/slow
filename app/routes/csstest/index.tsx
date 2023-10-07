@@ -1,6 +1,6 @@
 import "./a.css";
 
-import { Link } from "slow";
+import { Link } from "blitz";
 import { Something } from "./component.tsx";
 
 export default function () {

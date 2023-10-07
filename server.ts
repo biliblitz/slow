@@ -1,2 +1,2 @@
-export { buildSlowCity } from "./lib/build-common.ts";
-export { createSlowCity } from "./lib/server.tsx";
+export { buildBlitzCity } from "./lib/build-common.ts";
+export { createBlitzCity } from "./lib/server.tsx";

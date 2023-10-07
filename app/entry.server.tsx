@@ -1,4 +1,4 @@
-import { buildSlowCity, createSlowCity } from "slow/server";
+import { buildBlitzCity, createBlitzCity } from "blitz/server";
 import Root from "./root.tsx";
 
 // Note: You'd better use `npm:` prefix for tailwindcss
@@ -7,11 +7,11 @@ import tailwindcss from "npm:tailwindcss@3.3.3";
 import postcssPresetEnv from "npm:postcss-preset-env@9.1.3";
 
 // postcss plugins & esbuild plugins should put here!
-const project = await buildSlowCity({
+const project = await buildBlitzCity({
   postcssPlugins: [
     tailwindcss(),
     postcssPresetEnv(),
   ],
 });
 
-export default createSlowCity(project, <Root />);
+export default createBlitzCity(project, <Root />);
