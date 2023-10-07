@@ -3,6 +3,7 @@ import { extname, mdx, resolve, toFileUrl } from "../server-deps.ts";
 import { BuildSlowCityOptions } from "./build-common.ts";
 import { ActionInternal } from "./hooks/action.ts";
 import { LoaderInternal } from "./hooks/loader.ts";
+import { Middleware } from "./hooks/middleware.ts";
 import { hashRef } from "./utils/crypto.ts";
 import { isCss, isJs, isMdx } from "./utils/ext.ts";
 
@@ -43,7 +44,7 @@ export async function buildServerActions(actionPaths: string[]) {
 export async function buildServerMiddlewares(middlewarePaths: string[]) {
   return await Promise.all(middlewarePaths.map(async (path) => {
     const { default: middleware } = await import(toFileUrl(path).href);
-    return middleware;
+    return middleware as Middleware;
   }));
 }
 

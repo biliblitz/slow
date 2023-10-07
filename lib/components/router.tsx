@@ -43,7 +43,7 @@ function pushState(state: HistoryState, url: string | URL) {
   history.pushState(state, "", url);
 }
 
-async function importComponent(
+export async function importComponent(
   manifest: Manifest,
   components: ComponentType[],
   index: number,
@@ -57,7 +57,7 @@ async function importComponent(
   components[index] = component as ComponentType;
 }
 
-async function importComponents(
+export async function importComponents(
   manifest: Manifest,
   components: ComponentType[],
   indexes: number[],
@@ -80,28 +80,31 @@ export function RouterProvider(props: RouterProviderProps) {
   const components = useRef(manifest.components);
 
   const params = useSignal<[string, string][]>([]);
-  const outlets = useSignal<number[]>([]);
-  const preloads = useSignal<number[]>([]);
+  const outlets = useSignal<number[]>(manifest.entries[0].components);
+  const preloads = useSignal<number[]>(manifest.entries[0].components);
 
   const render = async (pathname: string, store: LoaderStore) => {
-    const entry = matchEntry(manifest.entries, pathname);
-    if (!entry) {
+    const match = matchEntry(manifest.entries, pathname);
+    if (!match) {
       console.error("Navigation 404!!");
       return;
     }
 
     // Start preload modules
-    preloads.value = entry.components;
+    preloads.value = match.entry.components;
 
     // Import every components
-    await importComponents(manifest, components.current, entry.components);
+    await importComponents(
+      manifest,
+      components.current,
+      match.entry.components,
+    );
 
     // Trigger render
     batch(() => {
       stores.value = store;
-      params.value = entry.regex.exec(pathname)!.slice(1)
-        .map((value, index) => [entry.params[index], value]);
-      outlets.value = entry.components;
+      params.value = match.params;
+      outlets.value = match.entry.components;
     });
   };
 

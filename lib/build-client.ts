@@ -60,7 +60,7 @@ export async function buildClientAssets(
     metafile: true,
     jsx: "automatic",
     jsxImportSource: "preact",
-    write: true,
+    write: false,
   });
 
   const assetNames = Object.keys(results.metafile.outputs);
@@ -82,10 +82,14 @@ export async function buildClientAssets(
     )
     .map(([name, _]) => assetNames.indexOf(name));
 
+  const assetBuffers = results.outputFiles
+    .map(({ contents }) => contents);
+
   return {
     assetNames,
     assetGraph,
     entryIndex,
+    assetBuffers,
     componentIndexes,
   };
 }

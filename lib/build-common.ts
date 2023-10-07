@@ -23,15 +23,10 @@ export async function buildSlowCity(
   options.dir = resolve(options.dir ?? "./app");
 
   const project = await scanProjectStructure(join(options.dir, "routes"));
-  console.log(project);
 
   const loaders = await buildServerLoaders(project.loaderPaths);
   const actions = await buildServerActions(project.actionPaths);
   const middlewares = await buildServerMiddlewares(project.middlewarePaths);
-
-  // console.log("loaders", loaders);
-  // console.log("actions", actions);
-  // console.log("middlewares", middlewares);
 
   const replacements = createReplacements(
     project.loaderPaths,
