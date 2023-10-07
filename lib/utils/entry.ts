@@ -1,13 +1,21 @@
 import { Entry } from "../scan.ts";
 
-export function matchEntry(entries: Entry[], pathname: string) {
-  for (const entry of entries) {
+export type Match = {
+  index: number;
+  params: string[];
+};
+
+export function matchPathname(entries: Entry[], pathname: string) {
+  for (const [index, entry] of entries.entries()) {
     const exec = entry.regex.exec(pathname);
     if (exec) {
-      const params = entry.params
-        .map((key, index) => [key, exec[index]] as [string, string]);
-      return { params, entry };
+      const params = exec.slice(1);
+      return { index, params } as Match;
     }
   }
   return null;
+}
+
+export function zip<T, R>(ts: T[], rs: R[]) {
+  return ts.map((t, i) => [t, rs[i]] as [T, R]);
 }

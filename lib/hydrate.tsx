@@ -8,8 +8,9 @@ export async function hydrate(root: VNode) {
   await importComponents(
     manifest,
     manifest.components,
-    manifest.entries[0].components,
+    manifest.entries[manifest.match.index].components,
   );
+  console.log(manifest);
 
   render(
     <ManifestProvider manifest={manifest}>

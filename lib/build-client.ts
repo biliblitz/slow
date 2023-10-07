@@ -61,6 +61,7 @@ export async function buildClientAssets(
     jsx: "automatic",
     jsxImportSource: "preact",
     write: false,
+    sourcemap: true,
   });
 
   const assetNames = Object.keys(results.metafile.outputs);

@@ -30,6 +30,8 @@ export function shortenManifest(manifest: Manifest) {
     manifest.assetGraph,
     manifest.componentIndexes,
     manifest.store,
+    manifest.match.index,
+    manifest.match.params,
   ] as const;
 }
 
@@ -55,6 +57,7 @@ export function lengthenManifest(shorten: ShortenManifest): Manifest {
     componentIndexes: shorten[5],
     store: shorten[6],
     components: new Array(shorten[5].length),
+    match: { index: shorten[7], params: shorten[8] },
   };
 }
 

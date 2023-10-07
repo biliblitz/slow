@@ -12,7 +12,7 @@ export type RequestEvent = {
   /**
    * Params arguments from URL.pathname
    */
-  readonly params: ReadonlyMap<string, string>;
+  readonly params: string[];
   /**
    * Extra headers appended to Response if nobody throws Response
    */

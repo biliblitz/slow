@@ -5,7 +5,7 @@ import { RequestEvent } from "./hooks/mod.ts";
 import { ManifestProvider } from "./manifest/context.tsx";
 import { createServerManifest } from "./manifest/server.ts";
 import { LoaderStore } from "./utils/api.ts";
-import { matchEntry } from "./utils/entry.ts";
+import { Match, matchPathname } from "./utils/entry.ts";
 
 const LOGO = `
  ____  _                ____ _ _         
@@ -39,7 +39,7 @@ export function createSlowCity(city: SlowCity, vnode: VNode) {
 
   function createRequestEvent(
     req: Request,
-    params: ReadonlyMap<string, string>,
+    params: string[],
     headers: Headers,
   ) {
     return { req, params, headers };
@@ -65,13 +65,13 @@ export function createSlowCity(city: SlowCity, vnode: VNode) {
 
     const pathname = url.pathname;
 
-    const match = matchEntry(city.project.entires, pathname);
+    const match = matchPathname(city.project.entires, pathname);
     if (!match) return new Response(null, { status: 404 });
-
-    const event = createRequestEvent(req, new Map(match.params), headers);
-    await runMiddleware(event, match.entry.middlewares);
-    const store = await runLoaders(event, match.entry.loaders);
-    const manifest = createServerManifest(city, store);
+    const entry = city.project.entires[match.index];
+    const event = createRequestEvent(req, match.params, headers);
+    await runMiddleware(event, entry.middlewares);
+    const store = await runLoaders(event, entry.loaders);
+    const manifest = createServerManifest(city, match, store);
 
     const html = renderToString(
       <ManifestProvider manifest={manifest}>

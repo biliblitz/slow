@@ -14,7 +14,7 @@ import { useManifest } from "../manifest/context.tsx";
 import { Manifest } from "../manifest/mod.ts";
 import { LoaderStore, ServerResponse } from "../utils/api.ts";
 import { useContextOrThrows } from "../utils/hooks.ts";
-import { matchEntry } from "../utils/entry.ts";
+import { matchPathname, zip } from "../utils/entry.ts";
 
 type Navigate = (href: string) => Promise<void>;
 type Render = (pathname: string, loaders: LoaderStore) => Promise<void>;
@@ -79,32 +79,35 @@ export function RouterProvider(props: RouterProviderProps) {
   const stores = useSignal(manifest.store);
   const components = useRef(manifest.components);
 
+  const entry = manifest.entries[manifest.match.index];
+
   const params = useSignal<[string, string][]>([]);
-  const outlets = useSignal<number[]>(manifest.entries[0].components);
-  const preloads = useSignal<number[]>(manifest.entries[0].components);
+  const outlets = useSignal<number[]>(entry.components);
+  const preloads = useSignal<number[]>(entry.components);
 
   const render = async (pathname: string, store: LoaderStore) => {
-    const match = matchEntry(manifest.entries, pathname);
+    const match = matchPathname(manifest.entries, pathname);
     if (!match) {
       console.error("Navigation 404!!");
       return;
     }
+    const entry = manifest.entries[match.index];
 
     // Start preload modules
-    preloads.value = match.entry.components;
+    preloads.value = entry.components;
 
     // Import every components
     await importComponents(
       manifest,
       components.current,
-      match.entry.components,
+      entry.components,
     );
 
     // Trigger render
     batch(() => {
       stores.value = store;
-      params.value = match.params;
-      outlets.value = match.entry.components;
+      params.value = zip(entry.params, match.params);
+      outlets.value = entry.components;
     });
   };
 
