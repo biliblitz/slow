@@ -1,17 +1,19 @@
-import { ClientAssets } from "../build-client.ts";
-import { Project } from "../scan.ts";
+import { SlowCity } from "../build-common.ts";
+import { LoaderStore } from "../utils/api.ts";
 import { Manifest } from "./mod.ts";
 
 export function createServerManifest(
-  project: Project,
-  assets: ClientAssets,
+  city: SlowCity,
+  store: LoaderStore,
 ): Manifest {
   return {
-    entries: project.entires,
+    store,
+    entries: city.project.entires,
     basePath: "/",
-    entryIndex: assets.entryIndex,
-    assetNames: assets.assets,
-    assetGraph: assets.assetsDependencyGraph,
-    componentIndexes: assets.componentIndexes,
+    components: city.components,
+    assetNames: city.assets.assetNames,
+    assetGraph: city.assets.assetGraph,
+    entryIndex: city.assets.entryIndex,
+    componentIndexes: city.assets.componentIndexes,
   };
 }

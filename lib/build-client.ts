@@ -63,13 +63,13 @@ export async function buildClientAssets(
     write: true,
   });
 
-  const assets = Object.keys(results.metafile.outputs);
+  const assetNames = Object.keys(results.metafile.outputs);
 
-  const assetsDependencyGraph = Object
+  const assetGraph = Object
     .values(results.metafile.outputs)
     .map((output) => {
-      const deps = output.imports.map(({ path }) => assets.indexOf(path));
-      if (output.cssBundle) deps.push(assets.indexOf(output.cssBundle));
+      const deps = output.imports.map(({ path }) => assetNames.indexOf(path));
+      if (output.cssBundle) deps.push(assetNames.indexOf(output.cssBundle));
       return deps;
     });
 
@@ -80,13 +80,13 @@ export async function buildClientAssets(
       entryPoints.indexOf(resolve(a[1].entryPoint!)) -
       entryPoints.indexOf(resolve(b[1].entryPoint!))
     )
-    .map(([name, _]) => assets.indexOf(name));
+    .map(([name, _]) => assetNames.indexOf(name));
 
   return {
-    assets,
+    assetNames,
+    assetGraph,
     entryIndex,
     componentIndexes,
-    assetsDependencyGraph,
   };
 }
 

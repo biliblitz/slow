@@ -1,8 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { batch, useComputed, useSignal } from "../../deps.ts";
 import { useRouter } from "../components/router.tsx";
-import { useRuntime } from "../runtime/context.ts";
-import { ServerActionResponse } from "../utils.ts";
+import { ServerResponse } from "../utils/api.ts";
 import { ActionState } from "./action.ts";
 
 export type RequestEvent = {
@@ -21,8 +20,8 @@ export type RequestEvent = {
 };
 
 export function useLoader(ref: string) {
-  const runtime = useRuntime();
-  return useComputed(() => new Map(runtime.loaders));
+  const router = useRouter();
+  return useComputed(() => router.stores.value.get(ref) ?? null);
 }
 
 export function useAction(ref: string) {
@@ -42,8 +41,8 @@ export function useAction(ref: string) {
     dataUrl.searchParams.set("saction", ref);
 
     const response = await fetch(dataUrl, { body: formData, method: "POST" })
-      .then((resp) => resp.json() as Promise<ServerActionResponse>)
-      .catch((error): Promise<ServerActionResponse> =>
+      .then((resp) => resp.json() as Promise<ServerResponse>)
+      .catch((error): Promise<ServerResponse> =>
         error instanceof Response
           // if return is not 200
           ? error.text().then((message) => ({
@@ -60,15 +59,16 @@ export function useAction(ref: string) {
       );
 
     // as always, making a POST request does not trigger history update
-    if (response.ok === "success") {
+    if (response.ok === "data") {
       batch(() => {
         data.value = response.action;
         isRunning.value = false;
       });
-      await router.render(response.data);
+      await router.render(location.pathname, response.store);
     } else if (response.ok === "redirect") {
       await router.navigate(response.redirect);
     } else if (response.ok === "error") {
+      console.error("waiting");
     }
   };
 

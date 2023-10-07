@@ -3,7 +3,7 @@ import { extname, mdx, resolve, toFileUrl } from "../server-deps.ts";
 import { BuildSlowCityOptions } from "./build-common.ts";
 import { ActionInternal } from "./hooks/action.ts";
 import { LoaderInternal } from "./hooks/loader.ts";
-import { hash } from "./utils.ts";
+import { hashRef } from "./utils/crypto.ts";
 import { isCss, isJs, isMdx } from "./utils/ext.ts";
 
 export async function buildServerLoaders(loaderPaths: string[]) {
@@ -13,7 +13,7 @@ export async function buildServerLoaders(loaderPaths: string[]) {
       Object.entries(loaderExports)
         .map(async ([name, loader_]) => {
           const loader = loader_ as LoaderInternal;
-          const ref = await hash(`loader-${index}-${name}`);
+          const ref = await hashRef(`loader-${index}-${name}`);
           loader.ref = ref;
           loader.name = name;
           return loader;
@@ -30,7 +30,7 @@ export async function buildServerActions(actionPaths: string[]) {
       Object.entries(actionExports)
         .map(async ([name, action_]) => {
           const action = action_ as ActionInternal;
-          const ref = await hash(`action-${index}-${name}`);
+          const ref = await hashRef(`action-${index}-${name}`);
           action.ref = ref;
           action.name = name;
           return action;

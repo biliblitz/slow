@@ -29,6 +29,7 @@ export function shortenManifest(manifest: Manifest) {
     manifest.assetNames,
     manifest.assetGraph,
     manifest.componentIndexes,
+    manifest.store,
   ] as const;
 }
 
@@ -52,6 +53,8 @@ export function lengthenManifest(shorten: ShortenManifest): Manifest {
     assetNames: shorten[3],
     assetGraph: shorten[4],
     componentIndexes: shorten[5],
+    store: shorten[6],
+    components: new Array(shorten[5].length),
   };
 }
 

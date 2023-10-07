@@ -14,7 +14,7 @@ import { useManifest } from "../manifest/context.tsx";
 import { Manifest } from "../manifest/mod.ts";
 import { LoaderStore, ServerResponse } from "../utils/api.ts";
 import { useContextOrThrows } from "../utils/hooks.ts";
-import { matchEntry } from "../utils/match.ts";
+import { matchEntry } from "../utils/entry.ts";
 
 type Navigate = (href: string) => Promise<void>;
 type Render = (pathname: string, loaders: LoaderStore) => Promise<void>;
@@ -22,13 +22,14 @@ type Render = (pathname: string, loaders: LoaderStore) => Promise<void>;
 type Router = {
   preloads: ReadonlySignal<number[]>;
   outlets: ReadonlySignal<number[]>;
-  store: ReadonlySignal<ReadonlyMap<string, any>>;
+  stores: ReadonlySignal<ReadonlyMap<string, any>>;
+  params: ReadonlySignal<ReadonlyMap<string, string>>;
   navigate: Navigate;
   render: Render;
 };
 
 type HistoryState = {
-  loaders: LoaderStore;
+  stores: LoaderStore;
   scroll: [number, number];
 };
 
@@ -69,19 +70,18 @@ async function importComponents(
 }
 
 type RouterProviderProps = {
-  components: ComponentType[];
-  loaders: LoaderStore;
   children?: ComponentChildren;
 };
 
 export function RouterProvider(props: RouterProviderProps) {
   const manifest = useManifest();
 
-  const loaders = useSignal(props.loaders);
-  const components = useRef(props.components);
+  const stores = useSignal(manifest.store);
+  const components = useRef(manifest.components);
 
-  const preloads = useSignal<number[]>([]);
+  const params = useSignal<[string, string][]>([]);
   const outlets = useSignal<number[]>([]);
+  const preloads = useSignal<number[]>([]);
 
   const render = async (pathname: string, store: LoaderStore) => {
     const entry = matchEntry(manifest.entries, pathname);
@@ -98,7 +98,9 @@ export function RouterProvider(props: RouterProviderProps) {
 
     // Trigger render
     batch(() => {
-      loaders.value = store;
+      stores.value = store;
+      params.value = entry.regex.exec(pathname)!.slice(1)
+        .map((value, index) => [entry.params[index], value]);
       outlets.value = entry.components;
     });
   };
@@ -138,9 +140,9 @@ export function RouterProvider(props: RouterProviderProps) {
     if (data.ok === "data") {
       // save current scroll before leave
       replaceState({ scroll: [scrollX, scrollY] });
-      pushState({ loaders: data.loaders, scroll: [0, 0] }, targetUrl);
+      pushState({ stores: data.store, scroll: [0, 0] }, targetUrl);
       // update DOM due to data
-      await render(targetUrl.pathname, data.loaders);
+      await render(targetUrl.pathname, data.store);
     } else if (data.ok === "redirect") {
       await navigate(data.redirect);
     }
@@ -148,25 +150,27 @@ export function RouterProvider(props: RouterProviderProps) {
 
   useEffect(() => {
     // TODO
-    replaceState({});
+    replaceState({ stores: manifest.store });
 
     addEventListener("popstate", async (e) => {
       const state = e.state as HistoryState;
-      await render(location.pathname, state.loaders);
+      await render(location.pathname, state.stores);
       scrollTo(state.scroll[0], state.scroll[1]);
     });
   }, []);
 
-  const store = useComputed(() => new Map(loaders.value));
+  const storesMap = useComputed(() => new Map(stores.value));
+  const paramsMap = useComputed(() => new Map(params.value));
 
   return (
     <RouterContext.Provider
       value={{
-        preloads,
+        stores: storesMap,
+        params: paramsMap,
+        render,
         outlets,
         navigate,
-        render,
-        store,
+        preloads,
       }}
     >
       {props.children}

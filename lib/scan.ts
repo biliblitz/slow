@@ -108,7 +108,7 @@ export type Entry = {
   middlewares: number[];
 };
 
-export async function scanProject(entrance: string) {
+export async function scanProjectStructure(entrance: string) {
   entrance = resolve(entrance);
   console.log(`start scanning from ${entrance}`);
 
@@ -256,4 +256,4 @@ export async function scanProject(entrance: string) {
   };
 }
 
-export type Project = Awaited<ReturnType<typeof scanProject>>;
+export type ProjectStructure = Awaited<ReturnType<typeof scanProjectStructure>>;

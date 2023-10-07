@@ -12,7 +12,6 @@ const project = await buildSlowCity({
     tailwindcss(),
     postcssPresetEnv(),
   ],
-  esbuildPlugins: [],
 });
 
 export default createSlowCity(project, <Root />);

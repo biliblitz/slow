@@ -8,8 +8,7 @@ import {
 } from "./build-server.ts";
 import { ActionInternal } from "./hooks/action.ts";
 import { LoaderInternal } from "./hooks/loader.ts";
-import { createServerManifest } from "./manifest/server.ts";
-import { scanProject } from "./scan.ts";
+import { scanProjectStructure } from "./scan.ts";
 
 export type BuildSlowCityOptions = Partial<{
   dir: string;
@@ -23,16 +22,16 @@ export async function buildSlowCity(
 ) {
   options.dir = resolve(options.dir ?? "./app");
 
-  const project = await scanProject(join(options.dir, "routes"));
+  const project = await scanProjectStructure(join(options.dir, "routes"));
   console.log(project);
 
   const loaders = await buildServerLoaders(project.loaderPaths);
   const actions = await buildServerActions(project.actionPaths);
   const middlewares = await buildServerMiddlewares(project.middlewarePaths);
 
-  console.log("loaders", loaders);
-  console.log("actions", actions);
-  console.log("middlewares", middlewares);
+  // console.log("loaders", loaders);
+  // console.log("actions", actions);
+  // console.log("middlewares", middlewares);
 
   const replacements = createReplacements(
     project.loaderPaths,
@@ -41,7 +40,7 @@ export async function buildSlowCity(
     actions,
   );
 
-  const clientAssets = await buildClientAssets(
+  const assets = await buildClientAssets(
     options,
     project.componentPaths,
     replacements,
@@ -53,16 +52,17 @@ export async function buildSlowCity(
     replacements,
   );
 
-  const manifest = createServerManifest(project, clientAssets);
-
   return {
+    assets,
     loaders,
     actions,
-    manifest,
-    middlewares,
+    project,
     components,
+    middlewares,
   };
 }
+
+export type SlowCity = Awaited<ReturnType<typeof buildSlowCity>>;
 
 function createReplacements(
   loaderPaths: string[],

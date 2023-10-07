@@ -3,7 +3,7 @@
 export type LoaderStore = [string, any][];
 export type ServerResponseData = {
   ok: "data";
-  loaders: LoaderStore;
+  store: LoaderStore;
   action?: any;
 };
 
@@ -12,4 +12,13 @@ export type ServerResponseRedirect = {
   redirect: string;
 };
 
-export type ServerResponse = ServerResponseData | ServerResponseRedirect;
+export type ServerResponseError = {
+  ok: "error";
+  status: number;
+  message: string;
+};
+
+export type ServerResponse =
+  | ServerResponseData
+  | ServerResponseRedirect
+  | ServerResponseError;
