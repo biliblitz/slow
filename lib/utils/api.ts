@@ -1,10 +1,12 @@
-// deno-lint-ignore-file no-explicit-any
+import { ActionReturnType } from "../hooks/action.ts";
+import { LoaderReturnType } from "../hooks/loader.ts";
 
-export type LoaderStore = [string, any][];
+export type LoaderStore = [string, LoaderReturnType][];
+
 export type ServerResponseData = {
   ok: "data";
   store: LoaderStore;
-  action?: any;
+  action?: ActionReturnType;
 };
 
 export type ServerResponseRedirect = {

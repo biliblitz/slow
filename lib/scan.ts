@@ -128,6 +128,7 @@ export async function scanProjectStructure(entrance: string) {
   const actionPaths: string[] = [];
   const componentPaths: string[] = [];
   const middlewarePaths: string[] = [];
+  const actionMiddlewares: number[][] = [];
 
   function registerEntry(
     dirs: string[],
@@ -171,10 +172,11 @@ export async function scanProjectStructure(entrance: string) {
     return id;
   }
 
-  function registerAction(filePath: string) {
+  function registerAction(filePath: string, middlewares: number[]) {
     const id = actionPaths.length;
     actionPaths.push(filePath);
-    console.log("action", id, "=>", filePath);
+    actionMiddlewares.push(middlewares);
+    console.log("action", id, "=>", filePath, middlewares);
     return id;
   }
 
@@ -193,84 +195,83 @@ export async function scanProjectStructure(entrance: string) {
       if (entry.isDirectory) dirnames.push(entry.name);
     }
 
-    let foundIndex: null | number = null;
-    let foundLayout: null | number = null;
-    let foundEndpoint: null | number = null;
-    let foundMiddleware: null | number = null;
-    const currentLoaders: number[] = [];
-    const currentActions: number[] = [];
+    // === first scan for layouts and middlewares ===
+    const layouts = [...parentLayouts];
+    const middlewares = [...parentMiddlewares];
+
+    let foundLayout = false;
+    let foundMiddleware = false;
 
     for (const filename of filenames) {
       const filePath = join(dirPath, filename);
-      if (isIndex(filename)) {
-        if (foundIndex !== null) {
-          throw new Error(
-            `Multiple index in same directory found: ${filePath}`,
-          );
-        }
-        if (foundEndpoint !== null) {
-          throw new Error(`Endpoint cannot exist with index: ${filePath}`);
-        }
-        foundIndex = registerComponent(filePath);
-      }
-      if (isEndpoint(filename)) {
-        if (foundEndpoint !== null) {
-          throw new Error(
-            `Multiple endpoint in same directory found: ${filePath}`,
-          );
-        }
-        if (foundIndex !== null) {
-          throw new Error(`Endpoint cannot exist with index: ${filePath}`);
-        }
-        foundEndpoint = registerMiddleware(filePath);
-      }
       if (isLayout(filename)) {
-        if (foundLayout !== null) {
+        if (foundLayout) {
           throw new Error(
             `Multiple layout in same directory found: ${filePath}`,
           );
         }
-        foundLayout = registerComponent(filePath);
+        foundLayout = true;
+        layouts.push(registerComponent(filePath));
       }
       if (isMiddleware(filename)) {
-        if (foundMiddleware !== null) {
+        if (foundMiddleware) {
           throw new Error(
             `Multiple middleware in same directory found: ${filePath}`,
           );
         }
-        foundMiddleware = registerMiddleware(filePath);
+        foundMiddleware = true;
+        middlewares.push(registerMiddleware(filePath));
       }
+    }
+
+    // === second scan for loaders and actions ===
+    const loaders = [...parentLoaders];
+
+    for (const filename of filenames) {
+      const filePath = join(dirPath, filename);
+
       if (isLoader(filename)) {
-        currentLoaders.push(registerLoader(filePath));
+        loaders.push(registerLoader(filePath));
       }
       if (isAction(filename)) {
-        currentActions.push(registerAction(filePath));
+        registerAction(filePath, middlewares);
       }
     }
 
-    // add layout to layouts
-    const layouts = [...parentLayouts];
-    if (foundLayout !== null) {
-      layouts.push(foundLayout);
-    }
+    // === third scan for index and endpoints ===
+    let foundIndex = false;
+    let foundEndpoint = false;
 
-    // add middlewares
-    const middlewares = [...parentMiddlewares];
-    if (foundMiddleware !== null) {
-      middlewares.push(foundMiddleware);
-    }
+    for (const filename of filenames) {
+      const filePath = join(dirPath, filename);
 
-    // sort loaders
-    const loaders = [...parentLoaders, ...currentLoaders];
+      if (isIndex(filename)) {
+        if (foundIndex) {
+          throw new Error(
+            `Multiple index in same directory found: ${filePath}`,
+          );
+        }
+        if (foundEndpoint) {
+          throw new Error(`Endpoint cannot exist with index: ${filePath}`);
+        }
+        foundIndex = true;
+        const index = registerComponent(filePath);
+        registerEntry(dirs, [...layouts, index], middlewares, loaders);
+      }
 
-    // register entry
-    if (foundIndex !== null) {
-      registerEntry(dirs, [...layouts, foundIndex], middlewares, loaders);
-    }
-
-    // register endpoint
-    if (foundEndpoint !== null) {
-      registerEndpoint(dirs, middlewares, foundEndpoint);
+      if (isEndpoint(filename)) {
+        if (foundEndpoint) {
+          throw new Error(
+            `Multiple endpoint in same directory found: ${filePath}`,
+          );
+        }
+        if (foundIndex) {
+          throw new Error(`Endpoint cannot exist with index: ${filePath}`);
+        }
+        foundEndpoint = true;
+        const endpoint = registerMiddleware(filePath);
+        registerEndpoint(dirs, middlewares, endpoint);
+      }
     }
 
     // sort dirnames from
@@ -298,6 +299,7 @@ export async function scanProjectStructure(entrance: string) {
     actionPaths,
     componentPaths,
     middlewarePaths,
+    actionMiddlewares,
   };
 }
 

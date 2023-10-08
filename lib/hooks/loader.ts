@@ -1,18 +1,23 @@
-// deno-lint-ignore-file no-explicit-any
+// deno-lint-ignore-file ban-types
 import { ReadonlySignal } from "../../deps.ts";
 import { RequestEvent } from "./mod.ts";
 
-export type LoaderReturn<T> = T | Promise<T>;
-export type LoaderFunction<T> = (event: RequestEvent) => LoaderReturn<T>;
-export type Loader<T = any> = () => ReadonlySignal<T>;
-export interface LoaderInternal<T = any> {
+export type LoaderReturnType = {} | null;
+export type LoaderReturn<T extends LoaderReturnType> = T | Promise<T>;
+export type LoaderFunction<T extends LoaderReturnType> = (
+  event: RequestEvent,
+) => LoaderReturn<T>;
+export type Loader<T extends LoaderReturnType> = () => ReadonlySignal<T>;
+export interface LoaderInternal<T extends LoaderReturnType = LoaderReturnType> {
   ref: string;
   name: string;
   func: LoaderFunction<T>;
 }
 
 // this function only calls in Deno
-export function loader$<T>(loaderFn: LoaderFunction<T>): Loader<T> {
+export function loader$<T extends LoaderReturnType>(
+  loaderFn: LoaderFunction<T>,
+): Loader<T> {
   const internal: LoaderInternal<T> = {
     ref: "",
     name: "",

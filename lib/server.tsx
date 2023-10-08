@@ -1,6 +1,7 @@
 import { VNode } from "../deps.ts";
 import { extname, renderToString, typeByExtension } from "../server-deps.ts";
 import { BlitzCity } from "./build-common.ts";
+import { ActionInternal } from "./hooks/action.ts";
 import { RequestEvent } from "./hooks/mod.ts";
 import { ManifestProvider } from "./manifest/context.tsx";
 import { createServerManifest } from "./manifest/server.ts";
@@ -35,6 +36,11 @@ export function createBlitzCity(city: BlitzCity, vnode: VNode) {
       }
     }
     return store;
+  }
+
+  async function runAction(event: RequestEvent, action: ActionInternal) {
+    await runMiddleware(event, action.middlewares);
+    return await action.func(event);
   }
 
   function createRequestEvent(
@@ -73,9 +79,8 @@ export function createBlitzCity(city: BlitzCity, vnode: VNode) {
       }
     }
 
-    let isDataRequest = false;
-
     // remove tailing s-data.json if exist
+    let isDataRequest = false;
     if (pathname.endsWith("/s-data.json")) {
       isDataRequest = true;
       pathname = pathname.slice(0, -11);
@@ -83,23 +88,50 @@ export function createBlitzCity(city: BlitzCity, vnode: VNode) {
 
     const match = matchEntries(city.project.entires, pathname);
     if (match) {
-      const actionRef = url.searchParams.get("saction");
-
       const headers = new Headers();
+
+      // redirect if not ending with slash
+      if (!pathname.endsWith("/")) {
+        url.pathname = pathname + "/";
+        headers.set("location", url.href);
+        return new Response(null, { status: 301, headers });
+      }
+
       const entry = city.project.entires[match.index];
       const event = createRequestEvent(req, entry.params, headers);
+
+      if (req.method === "POST") {
+        const actionRef = url.searchParams.get("saction");
+        const foundAction = city.actionMap.get(actionRef || "");
+        if (!foundAction) return new Response(null, { status: 400 });
+        const action = await runAction(event, foundAction);
+        await runMiddleware(event, entry.middlewares);
+        const store = await runLoaders(event, entry.loaders);
+        if (isDataRequest) {
+          return Response.json(
+            { ok: "data", store, action } satisfies ServerResponse,
+            { headers },
+          );
+        }
+        const manifest = createServerManifest(city, match, store);
+        const html = renderToString(
+          <ManifestProvider manifest={manifest}>
+            {vnode}
+          </ManifestProvider>,
+        );
+        headers.set("content-type", "text/html");
+        return new Response("<!DOCTYPE html>" + html, { headers });
+      }
+
       await runMiddleware(event, entry.middlewares);
       const store = await runLoaders(event, entry.loaders);
-
       if (isDataRequest) {
         return Response.json(
           { ok: "data", store } satisfies ServerResponse,
           { headers },
         );
       }
-
       const manifest = createServerManifest(city, match, store);
-
       const html = renderToString(
         <ManifestProvider manifest={manifest}>
           {vnode}
@@ -109,11 +141,6 @@ export function createBlitzCity(city: BlitzCity, vnode: VNode) {
       return new Response("<!DOCTYPE html>" + html, { headers });
     }
 
-    if (!url.pathname.endsWith("/")) {
-      url.pathname = url.pathname + "/";
-      return Response.redirect(url, 301);
-    }
-
-    const actionRef = url.searchParams.get("saction");
+    return new Response(null, { status: 404 });
   };
 }

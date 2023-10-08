@@ -14,7 +14,7 @@ import { useManifest } from "../manifest/context.tsx";
 import { Manifest } from "../manifest/mod.ts";
 import { LoaderStore, ServerResponse } from "../utils/api.ts";
 import { useContextOrThrows } from "../utils/hooks.ts";
-import { matchPathname, zip } from "../utils/entry.ts";
+import { matchEntries, zip } from "../utils/entry.ts";
 
 type Navigate = (href: string) => Promise<void>;
 type Render = (pathname: string, loaders: LoaderStore) => Promise<void>;
@@ -86,7 +86,7 @@ export function RouterProvider(props: RouterProviderProps) {
   const preloads = useSignal<number[]>(entry.components);
 
   const render = async (pathname: string, store: LoaderStore) => {
-    const match = matchPathname(manifest.entries, pathname);
+    const match = matchEntries(manifest.entries, pathname);
     if (!match) {
       console.error("Navigation 404!!");
       return;

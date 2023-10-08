@@ -5,13 +5,14 @@ import { ActionInternal } from "./hooks/action.ts";
 import { LoaderInternal } from "./hooks/loader.ts";
 import { Middleware } from "./hooks/middleware.ts";
 import { hashRef } from "./utils/crypto.ts";
+import { zip } from "./utils/entry.ts";
 import { isCss, isJs, isMdx } from "./utils/ext.ts";
 
 export async function buildServerLoaders(loaderPaths: string[]) {
   return await Promise.all(loaderPaths.map(async (path, index) => {
-    const loaderExports = await import(toFileUrl(path).href);
+    const exports = await import(toFileUrl(path).href);
     const loaders = await Promise.all(
-      Object.entries(loaderExports)
+      Object.entries(exports)
         .map(async ([name, loader_]) => {
           const loader = loader_ as LoaderInternal;
           const ref = await hashRef(`loader-${index}-${name}`);
@@ -24,21 +25,29 @@ export async function buildServerLoaders(loaderPaths: string[]) {
   }));
 }
 
-export async function buildServerActions(actionPaths: string[]) {
-  return await Promise.all(actionPaths.map(async (path, index) => {
-    const actionExports = await import(toFileUrl(path).href);
-    const actions = await Promise.all(
-      Object.entries(actionExports)
-        .map(async ([name, action_]) => {
-          const action = action_ as ActionInternal;
-          const ref = await hashRef(`action-${index}-${name}`);
-          action.ref = ref;
-          action.name = name;
-          return action;
-        }),
-    );
-    return actions;
-  }));
+export async function buildServerActions(
+  actionPaths: string[],
+  actionMiddlewares: number[][],
+) {
+  return await Promise.all(
+    zip(actionPaths, actionMiddlewares).map(
+      async ([path, middlewares], index) => {
+        const exports = await import(toFileUrl(path).href);
+        const actions = await Promise.all(
+          Object.entries(exports)
+            .map(async ([name, action_]) => {
+              const action = action_ as ActionInternal;
+              const ref = await hashRef(`action-${index}-${name}`);
+              action.ref = ref;
+              action.name = name;
+              action.middlewares = middlewares;
+              return action;
+            }),
+        );
+        return actions;
+      },
+    ),
+  );
 }
 
 export async function buildServerMiddlewares(middlewarePaths: string[]) {
