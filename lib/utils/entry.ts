@@ -1,11 +1,14 @@
-import { Entry } from "../scan.ts";
+import { EndpointEntry, Entry } from "../scan.ts";
 
 export type Match = {
   index: number;
   params: string[];
 };
 
-export function matchPathname(entries: Entry[], pathname: string) {
+export function matchEntries(
+  entries: Entry[] | EndpointEntry[],
+  pathname: string,
+) {
   for (const [index, entry] of entries.entries()) {
     const exec = entry.regex.exec(pathname);
     if (exec) {

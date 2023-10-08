@@ -4,8 +4,8 @@ import { BlitzCity } from "./build-common.ts";
 import { RequestEvent } from "./hooks/mod.ts";
 import { ManifestProvider } from "./manifest/context.tsx";
 import { createServerManifest } from "./manifest/server.ts";
-import { LoaderStore } from "./utils/api.ts";
-import { Match, matchPathname } from "./utils/entry.ts";
+import { LoaderStore, ServerResponse } from "./utils/api.ts";
+import { Match, matchEntries } from "./utils/entry.ts";
 
 const LOGO = `
  ____  _                ____ _ _         
@@ -31,7 +31,7 @@ export function createBlitzCity(city: BlitzCity, vnode: VNode) {
     for (const index of loaders) {
       for (const loader of city.loaders[index]) {
         const result = await loader.func(event);
-        store.push([loader.name, result]);
+        store.push([loader.ref, result]);
       }
     }
     return store;
@@ -45,40 +45,75 @@ export function createBlitzCity(city: BlitzCity, vnode: VNode) {
     return { req, params, headers };
   }
 
+  async function handleEndpointRequest(req: Request, match: Match) {
+    const headers = new Headers();
+    const entry = city.project.endpoints[match.index];
+    const event = createRequestEvent(req, match.params, headers);
+    await runMiddleware(event, entry.middlewares);
+    const endpoint = city.middlewares[entry.endpoint];
+    return await endpoint(event);
+  }
+
   return async (req: Request) => {
     const url = new URL(req.url);
-    const headers = new Headers();
+    let pathname = url.pathname;
 
-    if (url.pathname.startsWith("/build/")) {
-      const assetName = url.pathname.slice(1);
+    if (pathname.startsWith("/build/")) {
+      const assetName = pathname.slice(1);
       const index = city.assets.assetNames.indexOf(assetName);
       console.log(assetName, index);
       if (index > -1) {
         const assetBuffer = city.assets.assetBuffers[index];
         const mimeType = typeByExtension(extname(assetName)) ||
           "application/octet-stream";
+        const headers = new Headers();
         headers.set("content-type", mimeType);
         headers.set("cache-control", "max-age=31536000");
         return new Response(assetBuffer, { headers });
       }
     }
 
-    const pathname = url.pathname;
+    let isDataRequest = false;
 
-    const match = matchPathname(city.project.entires, pathname);
-    if (!match) return new Response(null, { status: 404 });
-    const entry = city.project.entires[match.index];
-    const event = createRequestEvent(req, match.params, headers);
-    await runMiddleware(event, entry.middlewares);
-    const store = await runLoaders(event, entry.loaders);
-    const manifest = createServerManifest(city, match, store);
+    // remove tailing s-data.json if exist
+    if (pathname.endsWith("/s-data.json")) {
+      isDataRequest = true;
+      pathname = pathname.slice(0, -11);
+    }
 
-    const html = renderToString(
-      <ManifestProvider manifest={manifest}>
-        {vnode}
-      </ManifestProvider>,
-    );
-    headers.set("content-type", "text/html");
-    return new Response("<!DOCTYPE html>" + html, { headers });
+    const match = matchEntries(city.project.entires, pathname);
+    if (match) {
+      const actionRef = url.searchParams.get("saction");
+
+      const headers = new Headers();
+      const entry = city.project.entires[match.index];
+      const event = createRequestEvent(req, entry.params, headers);
+      await runMiddleware(event, entry.middlewares);
+      const store = await runLoaders(event, entry.loaders);
+
+      if (isDataRequest) {
+        return Response.json(
+          { ok: "data", store } satisfies ServerResponse,
+          { headers },
+        );
+      }
+
+      const manifest = createServerManifest(city, match, store);
+
+      const html = renderToString(
+        <ManifestProvider manifest={manifest}>
+          {vnode}
+        </ManifestProvider>,
+      );
+      headers.set("content-type", "text/html");
+      return new Response("<!DOCTYPE html>" + html, { headers });
+    }
+
+    if (!url.pathname.endsWith("/")) {
+      url.pathname = url.pathname + "/";
+      return Response.redirect(url, 301);
+    }
+
+    const actionRef = url.searchParams.get("saction");
   };
 }

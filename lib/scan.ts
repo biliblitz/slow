@@ -41,6 +41,10 @@ function isLayout(filename: string) {
   return isJsOrMdx(filename) && isNameOf("layout", filename);
 }
 
+function isEndpoint(filename: string) {
+  return isJs(filename) && isNameOf("endpoint", filename);
+}
+
 function isMiddleware(filename: string) {
   return isJs(filename) && isNameOf("middleware", filename);
 }
@@ -75,7 +79,7 @@ function getRouteLevel(dir: string) {
   }
 }
 
-function getRouteRegex(dirs: string[]) {
+function computeEntryRegex(dirs: string[]) {
   let exp = "";
   const params = [];
 
@@ -94,17 +98,23 @@ function getRouteRegex(dirs: string[]) {
   }
 
   // Add a optional trailing slash
-  exp += "/?";
-  exp = "^" + exp + "$";
+  exp = "^" + exp + "/?$";
   const regex = new RegExp(exp, "i");
   return { regex, params };
 }
 
 export type Entry = {
-  components: number[];
   regex: RegExp;
   params: string[];
   loaders: number[];
+  components: number[];
+  middlewares: number[];
+};
+
+export type EndpointEntry = {
+  regex: RegExp;
+  params: string[];
+  endpoint: number;
   middlewares: number[];
 };
 
@@ -113,10 +123,11 @@ export async function scanProjectStructure(entrance: string) {
   console.log(`start scanning from ${entrance}`);
 
   const entires: Entry[] = [];
-  const componentPaths: string[] = [];
-  const middlewarePaths: string[] = [];
+  const endpoints: EndpointEntry[] = [];
   const loaderPaths: string[] = [];
   const actionPaths: string[] = [];
+  const componentPaths: string[] = [];
+  const middlewarePaths: string[] = [];
 
   function registerEntry(
     dirs: string[],
@@ -124,10 +135,19 @@ export async function scanProjectStructure(entrance: string) {
     middlewares: number[],
     loaders: number[],
   ) {
-    const { regex, params } = getRouteRegex(dirs);
-    const entry: Entry = { components, regex, params, middlewares, loaders };
-    console.log("register entry", regex, components, params);
-    entires.push(entry);
+    const { regex, params } = computeEntryRegex(dirs);
+    console.log("entry", regex);
+    entires.push({ components, regex, params, middlewares, loaders });
+  }
+
+  function registerEndpoint(
+    dirs: string[],
+    middlewares: number[],
+    endpoint: number,
+  ) {
+    const { regex, params } = computeEntryRegex(dirs);
+    console.log("endpoint", regex);
+    return endpoints.push({ regex, params, endpoint, middlewares });
   }
 
   function registerComponent(filePath: string) {
@@ -175,6 +195,7 @@ export async function scanProjectStructure(entrance: string) {
 
     let foundIndex: null | number = null;
     let foundLayout: null | number = null;
+    let foundEndpoint: null | number = null;
     let foundMiddleware: null | number = null;
     const currentLoaders: number[] = [];
     const currentActions: number[] = [];
@@ -183,13 +204,31 @@ export async function scanProjectStructure(entrance: string) {
       const filePath = join(dirPath, filename);
       if (isIndex(filename)) {
         if (foundIndex !== null) {
-          throw new Error(`Multiple index route found: ${filePath}`);
+          throw new Error(
+            `Multiple index in same directory found: ${filePath}`,
+          );
+        }
+        if (foundEndpoint !== null) {
+          throw new Error(`Endpoint cannot exist with index: ${filePath}`);
         }
         foundIndex = registerComponent(filePath);
       }
+      if (isEndpoint(filename)) {
+        if (foundEndpoint !== null) {
+          throw new Error(
+            `Multiple endpoint in same directory found: ${filePath}`,
+          );
+        }
+        if (foundIndex !== null) {
+          throw new Error(`Endpoint cannot exist with index: ${filePath}`);
+        }
+        foundEndpoint = registerMiddleware(filePath);
+      }
       if (isLayout(filename)) {
         if (foundLayout !== null) {
-          throw new Error(`Multiple layout route found: ${filePath}`);
+          throw new Error(
+            `Multiple layout in same directory found: ${filePath}`,
+          );
         }
         foundLayout = registerComponent(filePath);
       }
@@ -229,6 +268,11 @@ export async function scanProjectStructure(entrance: string) {
       registerEntry(dirs, [...layouts, foundIndex], middlewares, loaders);
     }
 
+    // register endpoint
+    if (foundEndpoint !== null) {
+      registerEndpoint(dirs, middlewares, foundEndpoint);
+    }
+
     // sort dirnames from
     // Catch -> Ignore -> Param -> Match
     dirnames.sort((a, b) => getRouteLevel(a) - getRouteLevel(b));
@@ -249,10 +293,11 @@ export async function scanProjectStructure(entrance: string) {
 
   return {
     entires,
-    componentPaths,
-    middlewarePaths,
+    endpoints,
     loaderPaths,
     actionPaths,
+    componentPaths,
+    middlewarePaths,
   };
 }
 
