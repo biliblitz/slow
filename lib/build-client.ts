@@ -24,7 +24,10 @@ export async function buildClientAssets(
 
   const results = await esbuild.build({
     plugins: [
-      mdxPlugin({ jsxImportSource: "preact", ...options.mdxOptions }),
+      mdxPlugin({
+        jsxImportSource: "preact",
+        ...options.mdxOptions,
+      }) as esbuild.Plugin,
       postcssPlugin({ plugins: options.postcssPlugins }),
       {
         name: "resolve-mdx",

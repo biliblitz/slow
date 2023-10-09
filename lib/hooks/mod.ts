@@ -2,7 +2,7 @@
 import { batch, useComputed, useSignal } from "../../deps.ts";
 import { useRouter } from "../components/router.tsx";
 import { ServerResponse } from "../utils/api.ts";
-import { ActionState } from "./action.ts";
+import { ActionReturnType, ActionState } from "./action.ts";
 
 export type RequestEvent = {
   /**
@@ -26,7 +26,7 @@ export function useLoader(ref: string) {
 
 export function useAction(ref: string) {
   const router = useRouter();
-  const data = useSignal(null);
+  const data = useSignal<ActionReturnType | null>(null);
   const isRunning = useSignal(false);
 
   const submit = async (formData: FormData) => {
@@ -61,7 +61,9 @@ export function useAction(ref: string) {
     // as always, making a POST request does not trigger history update
     if (response.ok === "data") {
       batch(() => {
-        data.value = response.action;
+        if (typeof response.action !== "undefined") {
+          data.value = response.action;
+        }
         isRunning.value = false;
       });
       await router.render(location.pathname, response.store);

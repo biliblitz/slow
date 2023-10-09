@@ -41,10 +41,6 @@ function isLayout(filename: string) {
   return isJsOrMdx(filename) && isNameOf("layout", filename);
 }
 
-function isEndpoint(filename: string) {
-  return isJs(filename) && isNameOf("endpoint", filename);
-}
-
 function isMiddleware(filename: string) {
   return isJs(filename) && isNameOf("middleware", filename);
 }
@@ -111,19 +107,11 @@ export type Entry = {
   middlewares: number[];
 };
 
-export type EndpointEntry = {
-  regex: RegExp;
-  params: string[];
-  endpoint: number;
-  middlewares: number[];
-};
-
 export async function scanProjectStructure(entrance: string) {
   entrance = resolve(entrance);
   console.log(`start scanning from ${entrance}`);
 
   const entires: Entry[] = [];
-  const endpoints: EndpointEntry[] = [];
   const loaderPaths: string[] = [];
   const actionPaths: string[] = [];
   const componentPaths: string[] = [];
@@ -139,16 +127,6 @@ export async function scanProjectStructure(entrance: string) {
     const { regex, params } = computeEntryRegex(dirs);
     console.log("entry", regex);
     entires.push({ components, regex, params, middlewares, loaders });
-  }
-
-  function registerEndpoint(
-    dirs: string[],
-    middlewares: number[],
-    endpoint: number,
-  ) {
-    const { regex, params } = computeEntryRegex(dirs);
-    console.log("endpoint", regex);
-    return endpoints.push({ regex, params, endpoint, middlewares });
   }
 
   function registerComponent(filePath: string) {
@@ -238,9 +216,8 @@ export async function scanProjectStructure(entrance: string) {
       }
     }
 
-    // === third scan for index and endpoints ===
+    // === third scan for index ===
     let foundIndex = false;
-    let foundEndpoint = false;
 
     for (const filename of filenames) {
       const filePath = join(dirPath, filename);
@@ -251,26 +228,9 @@ export async function scanProjectStructure(entrance: string) {
             `Multiple index in same directory found: ${filePath}`,
           );
         }
-        if (foundEndpoint) {
-          throw new Error(`Endpoint cannot exist with index: ${filePath}`);
-        }
         foundIndex = true;
         const index = registerComponent(filePath);
         registerEntry(dirs, [...layouts, index], middlewares, loaders);
-      }
-
-      if (isEndpoint(filename)) {
-        if (foundEndpoint) {
-          throw new Error(
-            `Multiple endpoint in same directory found: ${filePath}`,
-          );
-        }
-        if (foundIndex) {
-          throw new Error(`Endpoint cannot exist with index: ${filePath}`);
-        }
-        foundEndpoint = true;
-        const endpoint = registerMiddleware(filePath);
-        registerEndpoint(dirs, middlewares, endpoint);
       }
     }
 
@@ -294,7 +254,6 @@ export async function scanProjectStructure(entrance: string) {
 
   return {
     entires,
-    endpoints,
     loaderPaths,
     actionPaths,
     componentPaths,

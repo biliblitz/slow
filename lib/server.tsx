@@ -51,15 +51,6 @@ export function createBlitzCity(city: BlitzCity, vnode: VNode) {
     return { req, params, headers };
   }
 
-  async function handleEndpointRequest(req: Request, match: Match) {
-    const headers = new Headers();
-    const entry = city.project.endpoints[match.index];
-    const event = createRequestEvent(req, match.params, headers);
-    await runMiddleware(event, entry.middlewares);
-    const endpoint = city.middlewares[entry.endpoint];
-    return await endpoint(event);
-  }
-
   return async (req: Request) => {
     const url = new URL(req.url);
     let pathname = url.pathname;

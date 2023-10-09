@@ -1,4 +1,4 @@
-import { EndpointEntry, Entry } from "../scan.ts";
+import { Entry } from "../scan.ts";
 
 export type Match = {
   index: number;
@@ -6,7 +6,7 @@ export type Match = {
 };
 
 export function matchEntries(
-  entries: Entry[] | EndpointEntry[],
+  entries: Entry[],
   pathname: string,
 ) {
   for (const [index, entry] of entries.entries()) {
