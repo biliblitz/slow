@@ -8,26 +8,34 @@ import { hashRef } from "./utils/crypto.ts";
 import { zip } from "./utils/entry.ts";
 import { isCss, isJs, isMdx } from "./utils/ext.ts";
 
-export async function buildServerLoaders(loaderPaths: string[]) {
-  return await Promise.all(loaderPaths.map(async (path, index) => {
-    const exports = await import(toFileUrl(path).href);
-    const loaders = await Promise.all(
-      Object.entries(exports)
-        .map(async ([name, loader_]) => {
-          const loader = loader_ as LoaderInternal;
-          if (!loader[LoaderSymbol]) {
-            throw new Error(
-              `You can only export loaders from ${path}: ${name}`,
-            );
-          }
-          const ref = await hashRef(`loader-${index}-${name}`);
-          loader.ref = ref;
-          loader.name = name;
-          return loader;
-        }),
-    );
-    return loaders;
-  }));
+export async function buildServerLoaders(
+  loaderPaths: string[],
+  loaderMiddlewares: number[][],
+) {
+  return await Promise.all(
+    zip(loaderPaths, loaderMiddlewares).map(
+      async ([path, middlewares], index) => {
+        const exports = await import(toFileUrl(path).href);
+        const loaders = await Promise.all(
+          Object.entries(exports)
+            .map(async ([name, loader_]) => {
+              const loader = loader_ as LoaderInternal;
+              if (!loader[LoaderSymbol]) {
+                throw new Error(
+                  `You can only export loaders from ${path}: ${name}`,
+                );
+              }
+              const ref = await hashRef(`loader-${index}-${name}`);
+              loader.ref = ref;
+              loader.name = name;
+              loader.middlewares = middlewares;
+              return loader;
+            }),
+        );
+        return loaders;
+      },
+    ),
+  );
 }
 
 export async function buildServerActions(

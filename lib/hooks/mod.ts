@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 import { batch, useComputed, useSignal } from "../../deps.ts";
 import { useRouter } from "../components/router.tsx";
 import { ServerResponse } from "../utils/api.ts";
@@ -74,7 +73,7 @@ export function useAction(ref: string) {
     }
   };
 
-  return { isRunning, data, ref, submit } satisfies ActionState<any>;
+  return { isRunning, data, ref, submit } satisfies ActionState;
 }
 
 export function useParam(param: string) {

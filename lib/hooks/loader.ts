@@ -14,6 +14,7 @@ export interface LoaderInternal<T extends LoaderReturnType = LoaderReturnType> {
   ref: string;
   name: string;
   func: LoaderFunction<T>;
+  middlewares: number[];
 }
 
 // this function only calls in Deno
@@ -25,6 +26,7 @@ export function loader$<T extends LoaderReturnType>(
     ref: "",
     name: "",
     func: loaderFn,
+    middlewares: [],
   };
   // we does not return loader itself in code
   // we will do a magic replacement in building process.

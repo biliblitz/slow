@@ -1,3 +1,4 @@
+import { useSignalEffect } from "@preact/signals";
 import {
   createContext,
   ReadonlySignal,
@@ -18,6 +19,10 @@ export function RouterOutlet() {
   const entryPath = manifest.basePath +
     manifest.assetNames[manifest.entryIndex];
 
+  useSignalEffect(() => {
+    console.log("outlets update =>", router.outlets.value);
+  });
+
   return (
     <OutletContext.Provider value={router.outlets}>
       <Outlet />
@@ -31,7 +36,7 @@ export function Outlet() {
   const manifest = useManifest();
   const outlets = useContext(OutletContext);
   const children = useComputed(() => outlets.value.slice(1));
-
+  console.log("render <Outlet />");
   if (outlets.value.length > 0) {
     const Component = manifest.components[outlets.value[0]];
     return (

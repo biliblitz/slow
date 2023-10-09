@@ -25,7 +25,10 @@ export async function buildBlitzCity(
   const project = await scanProjectStructure(join(options.dir, "routes"));
 
   const middlewares = await buildServerMiddlewares(project.middlewarePaths);
-  const loaders = await buildServerLoaders(project.loaderPaths);
+  const loaders = await buildServerLoaders(
+    project.loaderPaths,
+    project.loaderMiddlewares,
+  );
   const actions = await buildServerActions(
     project.actionPaths,
     project.actionMiddlewares,

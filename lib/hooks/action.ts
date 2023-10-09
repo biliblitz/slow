@@ -7,7 +7,7 @@ export type ActionReturn<T extends ActionReturnType> = T | Promise<T>;
 export type ActionFunction<T extends ActionReturnType> = (
   event: RequestEvent,
 ) => ActionReturn<T>;
-export type ActionState<T extends ActionReturnType> = {
+export type ActionState<T extends ActionReturnType = ActionReturnType> = {
   readonly data: ReadonlySignal<T | null>;
   readonly isRunning: ReadonlySignal<boolean>;
   readonly ref: string;

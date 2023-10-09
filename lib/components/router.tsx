@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 import {
   batch,
   ComponentChildren,
@@ -15,14 +14,16 @@ import { Manifest } from "../manifest/mod.ts";
 import { LoaderStore, ServerResponse } from "../utils/api.ts";
 import { useContextOrThrows } from "../utils/hooks.ts";
 import { matchEntries, zip } from "../utils/entry.ts";
+import { LoaderReturnType } from "../hooks/loader.ts";
+import { longestCommonPrefix } from "../utils/algo.ts";
 
-type Navigate = (href: string) => Promise<void>;
+type Navigate = (href: string | URL) => Promise<void>;
 type Render = (pathname: string, loaders: LoaderStore) => Promise<void>;
 
 type Router = {
   preloads: ReadonlySignal<number[]>;
   outlets: ReadonlySignal<number[]>;
-  stores: ReadonlySignal<ReadonlyMap<string, any>>;
+  stores: ReadonlySignal<ReadonlyMap<string, LoaderReturnType>>;
   params: ReadonlySignal<ReadonlyMap<string, string>>;
   navigate: Navigate;
   render: Render;
@@ -81,7 +82,9 @@ export function RouterProvider(props: RouterProviderProps) {
 
   const entry = manifest.entries[manifest.match.index];
 
-  const params = useSignal<[string, string][]>([]);
+  const params = useSignal<[string, string][]>(
+    zip(entry.params, manifest.match.params),
+  );
   const outlets = useSignal<number[]>(entry.components);
   const preloads = useSignal<number[]>(entry.components);
 
@@ -103,8 +106,8 @@ export function RouterProvider(props: RouterProviderProps) {
       entry.components,
     );
 
-    // Clean old components
-    outlets.value = [];
+    // Clear old components
+    outlets.value = longestCommonPrefix(outlets.value, entry.components);
 
     // Render new components
     setTimeout(() => {
@@ -116,9 +119,15 @@ export function RouterProvider(props: RouterProviderProps) {
     });
   };
 
-  const navigate = async (href: string) => {
+  const navigate = async (href: string | URL) => {
     // calculate target url
-    const targetUrl = new URL(href, location.href);
+    const targetUrl = href instanceof URL ? href : new URL(href, location.href);
+
+    // if jump to external website
+    if (targetUrl.host !== location.host) {
+      open(targetUrl);
+      return;
+    }
 
     // if is the same page, then we don't need fetch any data
     if (targetUrl.pathname === location.pathname) {

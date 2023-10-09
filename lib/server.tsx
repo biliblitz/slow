@@ -28,6 +28,11 @@ export function createBlitzCity(city: BlitzCity, vnode: VNode) {
   }
 
   async function runLoaders(event: RequestEvent, loaders: number[]) {
+    const middlewares = loaders
+      .flatMap((index) => city.loaders[index][0]?.middlewares || [])
+      .sort((a, b) => a - b);
+    await runMiddleware(event, [...new Set(middlewares)]);
+
     const store = [] as LoaderStore;
     for (const index of loaders) {
       for (const loader of city.loaders[index]) {
@@ -35,6 +40,7 @@ export function createBlitzCity(city: BlitzCity, vnode: VNode) {
         store.push([loader.ref, result]);
       }
     }
+
     return store;
   }
 
@@ -96,7 +102,6 @@ export function createBlitzCity(city: BlitzCity, vnode: VNode) {
         const foundAction = city.actionMap.get(actionRef || "");
         if (!foundAction) return new Response(null, { status: 400 });
         const action = await runAction(event, foundAction);
-        await runMiddleware(event, entry.middlewares);
         const store = await runLoaders(event, entry.loaders);
         if (isDataRequest) {
           return Response.json(
@@ -114,7 +119,6 @@ export function createBlitzCity(city: BlitzCity, vnode: VNode) {
         return new Response("<!DOCTYPE html>" + html, { headers });
       }
 
-      await runMiddleware(event, entry.middlewares);
       const store = await runLoaders(event, entry.loaders);
       if (isDataRequest) {
         return Response.json(
