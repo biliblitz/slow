@@ -34,7 +34,6 @@ export function Outlet() {
 
   if (outlets.value.length > 0) {
     const Component = manifest.components[outlets.value[0]];
-    console.log("outlet", Component);
     return (
       <OutletContext.Provider value={children}>
         <Component />

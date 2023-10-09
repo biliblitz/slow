@@ -103,11 +103,16 @@ export function RouterProvider(props: RouterProviderProps) {
       entry.components,
     );
 
-    // Trigger render
-    batch(() => {
-      stores.value = store;
-      params.value = zip(entry.params, match.params);
-      outlets.value = entry.components;
+    // Clean old components
+    outlets.value = [];
+
+    // Render new components
+    setTimeout(() => {
+      batch(() => {
+        stores.value = store;
+        params.value = zip(entry.params, match.params);
+        outlets.value = entry.components;
+      });
     });
   };
 
