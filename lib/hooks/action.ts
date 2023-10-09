@@ -14,7 +14,9 @@ export type ActionState<T extends ActionReturnType> = {
   submit(formData: FormData): Promise<void>;
 };
 export type Action<T extends ActionReturnType> = () => ActionState<T>;
+export const ActionSymbol = Symbol("action");
 export interface ActionInternal<T extends ActionReturnType = ActionReturnType> {
+  [ActionSymbol]?: boolean;
   ref: string;
   name: string;
   func: ActionFunction<T>;
@@ -25,6 +27,7 @@ export function action$<T extends ActionReturnType>(
   actionFn: ActionFunction<T>,
 ): Action<T> {
   const internal: ActionInternal<T> = {
+    [ActionSymbol]: true,
     ref: "",
     name: "",
     func: actionFn,

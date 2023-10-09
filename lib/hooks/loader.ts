@@ -8,7 +8,9 @@ export type LoaderFunction<T extends LoaderReturnType> = (
   event: RequestEvent,
 ) => LoaderReturn<T>;
 export type Loader<T extends LoaderReturnType> = () => ReadonlySignal<T>;
+export const LoaderSymbol = Symbol("loader");
 export interface LoaderInternal<T extends LoaderReturnType = LoaderReturnType> {
+  [LoaderSymbol]?: boolean;
   ref: string;
   name: string;
   func: LoaderFunction<T>;
@@ -19,6 +21,7 @@ export function loader$<T extends LoaderReturnType>(
   loaderFn: LoaderFunction<T>,
 ): Loader<T> {
   const internal: LoaderInternal<T> = {
+    [LoaderSymbol]: true,
     ref: "",
     name: "",
     func: loaderFn,

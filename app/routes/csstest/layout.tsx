@@ -1,6 +1,7 @@
 import { Outlet } from "blitz";
-import "./b.css";
 import { Something } from "./component.tsx";
+
+import "./b.css";
 
 export default function () {
   return (

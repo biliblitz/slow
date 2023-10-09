@@ -1,8 +1,8 @@
 import { ComponentType } from "../deps.ts";
 import { extname, mdx, resolve, toFileUrl } from "../server-deps.ts";
 import { BuildBlitzCityOptions } from "./build-common.ts";
-import { ActionInternal } from "./hooks/action.ts";
-import { LoaderInternal } from "./hooks/loader.ts";
+import { ActionInternal, ActionSymbol } from "./hooks/action.ts";
+import { LoaderInternal, LoaderSymbol } from "./hooks/loader.ts";
 import { Middleware } from "./hooks/middleware.ts";
 import { hashRef } from "./utils/crypto.ts";
 import { zip } from "./utils/entry.ts";
@@ -15,6 +15,11 @@ export async function buildServerLoaders(loaderPaths: string[]) {
       Object.entries(exports)
         .map(async ([name, loader_]) => {
           const loader = loader_ as LoaderInternal;
+          if (!loader[LoaderSymbol]) {
+            throw new Error(
+              `You can only export loaders from ${path}: ${name}`,
+            );
+          }
           const ref = await hashRef(`loader-${index}-${name}`);
           loader.ref = ref;
           loader.name = name;
@@ -37,6 +42,11 @@ export async function buildServerActions(
           Object.entries(exports)
             .map(async ([name, action_]) => {
               const action = action_ as ActionInternal;
+              if (!action[ActionSymbol]) {
+                throw new Error(
+                  `You can only export actions from ${path}: ${name}`,
+                );
+              }
               const ref = await hashRef(`action-${index}-${name}`);
               action.ref = ref;
               action.name = name;
