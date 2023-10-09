@@ -1,4 +1,4 @@
-import { esbuild, join, mdx, postcss, resolve } from "../server-deps.ts";
+import { esbuild, join, mdx, postcss, resolve } from "../deps.ts";
 import { buildClientAssets } from "./build-client.ts";
 import {
   buildServerActions,

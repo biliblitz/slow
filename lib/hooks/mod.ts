@@ -1,4 +1,4 @@
-import { batch, useComputed, useSignal } from "../../deps.ts";
+import { batch, useComputed, useSignal } from "@preact/signals";
 import { useRouter } from "../components/router.tsx";
 import { ServerResponse } from "../utils/api.ts";
 import { ActionReturnType, ActionState } from "./action.ts";

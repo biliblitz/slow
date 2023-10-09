@@ -1,12 +1,13 @@
-import { VNode } from "../deps.ts";
-import { extname, renderToString, typeByExtension } from "../server-deps.ts";
+import { VNode } from "preact";
+import { extname, typeByExtension } from "../deps.ts";
 import { BlitzCity } from "./build-common.ts";
 import { ActionInternal } from "./hooks/action.ts";
 import { RequestEvent } from "./hooks/mod.ts";
 import { ManifestProvider } from "./manifest/context.tsx";
 import { createServerManifest } from "./manifest/server.ts";
 import { LoaderStore, ServerResponse } from "./utils/api.ts";
-import { Match, matchEntries } from "./utils/entry.ts";
+import { matchEntries } from "./utils/entry.ts";
+import { renderToString } from "preact-render-to-string";
 
 const LOGO = `
  ____  _                ____ _ _         

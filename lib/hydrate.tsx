@@ -1,4 +1,4 @@
-import { render, VNode } from "../deps.ts";
+import { render, VNode } from "preact";
 import { importComponents } from "./components/router.tsx";
 import { createClientManifest } from "./manifest/client.ts";
 import { ManifestProvider } from "./manifest/context.tsx";

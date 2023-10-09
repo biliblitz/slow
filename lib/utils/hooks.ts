@@ -1,4 +1,5 @@
-import { Context, useContext } from "../../deps.ts";
+import { useContext } from "preact/hooks";
+import { Context } from "preact";
 
 export function useContextOrThrows<T>(
   context: Context<T | null>,

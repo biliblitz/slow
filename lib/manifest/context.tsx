@@ -1,4 +1,4 @@
-import { ComponentChildren, createContext } from "../../deps.ts";
+import { ComponentChildren, createContext } from "preact";
 import { useContextOrThrows } from "../utils/hooks.ts";
 import { Manifest } from "./mod.ts";
 

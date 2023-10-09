@@ -1,5 +1,5 @@
 // deno-lint-ignore-file ban-types
-import { ReadonlySignal } from "../../deps.ts";
+import { ReadonlySignal } from "@preact/signals";
 import { RequestEvent } from "./mod.ts";
 
 export type LoaderReturnType = {} | null;

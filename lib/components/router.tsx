@@ -1,14 +1,4 @@
-import {
-  batch,
-  ComponentChildren,
-  ComponentType,
-  createContext,
-  ReadonlySignal,
-  useComputed,
-  useEffect,
-  useRef,
-  useSignal,
-} from "../../deps.ts";
+import { batch, ReadonlySignal, useComputed, useSignal } from "@preact/signals";
 import { useManifest } from "../manifest/context.tsx";
 import { Manifest } from "../manifest/mod.ts";
 import { LoaderStore, ServerResponse } from "../utils/api.ts";
@@ -16,6 +6,8 @@ import { useContextOrThrows } from "../utils/hooks.ts";
 import { matchEntries, zip } from "../utils/entry.ts";
 import { LoaderReturnType } from "../hooks/loader.ts";
 import { longestCommonPrefix } from "../utils/algo.ts";
+import { ComponentChildren, ComponentType, createContext } from "preact";
+import { useEffect, useRef } from "preact/hooks";
 
 type Navigate = (href: string | URL) => Promise<void>;
 type Render = (pathname: string, loaders: LoaderStore) => Promise<void>;
@@ -170,7 +162,7 @@ export function RouterProvider(props: RouterProviderProps) {
 
   useEffect(() => {
     // TODO
-    replaceState({ stores: manifest.store });
+    replaceState({ stores: manifest.store, scroll: [0, 0] });
 
     addEventListener("popstate", async (e) => {
       const state = e.state as HistoryState;

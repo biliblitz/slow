@@ -5,7 +5,7 @@ import {
   join,
   mdxPlugin,
   resolve,
-} from "../server-deps.ts";
+} from "../deps.ts";
 import { BuildBlitzCityOptions } from "./build-common.ts";
 import { postcssPlugin } from "./esbuild/postcss.ts";
 import { replacePlugin } from "./esbuild/replace.ts";

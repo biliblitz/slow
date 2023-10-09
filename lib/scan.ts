@@ -1,4 +1,4 @@
-import { extname, join, resolve } from "../server-deps.ts";
+import { extname, join, resolve } from "../deps.ts";
 import { isJs, isJsOrMdx } from "./utils/ext.ts";
 
 function getFilenameWithoutExt(filename: string) {

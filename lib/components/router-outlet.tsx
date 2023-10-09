@@ -1,14 +1,14 @@
-import { useSignalEffect } from "@preact/signals";
 import {
-  createContext,
   ReadonlySignal,
   signal,
   useComputed,
-  useContext,
-} from "../../deps.ts";
+  useSignalEffect,
+} from "@preact/signals";
+import { useContext } from "preact/hooks";
 import { useManifest } from "../manifest/context.tsx";
 import { ManifestInjector } from "../manifest/injector.tsx";
 import { useRouter } from "./router.tsx";
+import { createContext } from "preact";
 
 const OutletContext = createContext<ReadonlySignal<number[]>>(signal([]));
 

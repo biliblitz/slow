@@ -1,5 +1,5 @@
-import { ComponentType } from "../deps.ts";
-import { extname, mdx, resolve, toFileUrl } from "../server-deps.ts";
+import { ComponentType } from "preact";
+import { extname, mdx, resolve, toFileUrl } from "../deps.ts";
 import { BuildBlitzCityOptions } from "./build-common.ts";
 import { ActionInternal, ActionSymbol } from "./hooks/action.ts";
 import { LoaderInternal, LoaderSymbol } from "./hooks/loader.ts";

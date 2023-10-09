@@ -4,7 +4,8 @@ import { useRandomLoader } from "./loader.tsx";
 import { useComputed } from "@preact/signals";
 
 export default function () {
-  const randomAction = useRandomAction();
+  const randomAction1 = useRandomAction();
+  const randomAction2 = useRandomAction();
   const randomLoader = useRandomLoader();
 
   const loader = useComputed(() => {
@@ -23,10 +24,22 @@ export default function () {
       </p>
 
       <p>Loader: {loader}</p>
-      <p>Action Data: {randomAction.data}</p>
-      <p>Action isRunning: {randomAction.isRunning.value ? "Yes" : "No"}</p>
 
-      <Form action={randomAction}>
+      <br />
+
+      <p>Action Data: {randomAction1.data}</p>
+      <p>Action isRunning: {randomAction1.isRunning.value ? "Yes" : "No"}</p>
+
+      <Form action={randomAction1}>
+        <button>Fresh</button>
+      </Form>
+
+      <br />
+
+      <p>Action Data: {randomAction2.data}</p>
+      <p>Action isRunning: {randomAction2.isRunning.value ? "Yes" : "No"}</p>
+
+      <Form action={randomAction2}>
         <button>Fresh</button>
       </Form>
     </article>

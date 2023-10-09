@@ -1,4 +1,4 @@
-import { JSX } from "../../deps.ts";
+import { JSX } from "preact";
 import { ActionReturnType, ActionState } from "../hooks/action.ts";
 
 type FormProps<T extends ActionReturnType> =
