@@ -32,6 +32,10 @@ function replaceState(state: Partial<HistoryState>) {
   history.replaceState({ ...history.state, ...state }, "");
 }
 
+function replaceURL(url: string | URL) {
+  history.replaceState(history.state, "", url);
+}
+
 function pushState(state: HistoryState, url: string | URL) {
   history.pushState(state, "", url);
 }
@@ -130,6 +134,7 @@ export function RouterProvider(props: RouterProviderProps) {
       if (targetAnchor !== originAnchor && targetAnchor) {
         document.getElementById(targetAnchor.slice(1))
           ?.scrollIntoView({ behavior: "smooth" });
+        replaceURL(targetUrl);
         return;
       }
 
@@ -161,7 +166,6 @@ export function RouterProvider(props: RouterProviderProps) {
   };
 
   useEffect(() => {
-    // TODO
     replaceState({ stores: manifest.store, scroll: [0, 0] });
 
     addEventListener("popstate", async (e) => {

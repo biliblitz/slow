@@ -12,7 +12,9 @@ export function Link(props: LinkProps) {
     <a
       onClick={(e) => {
         const target = new URL(e.currentTarget.href, location.href);
-        if (target.host === location.host) {
+        const self = (e.currentTarget.target || "_self") === "_self";
+        const sameOrigin = target.host === location.host;
+        if (self && sameOrigin) {
           e.preventDefault();
           navigate(target);
         }

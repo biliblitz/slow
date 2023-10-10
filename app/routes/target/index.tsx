@@ -10,7 +10,15 @@ export default function () {
   return (
     <div>
       <h1>Target</h1>
-      <Link href="/jump">Go to jump</Link>
+      <p>
+        <Link href="/jump">Go to jump</Link>
+      </p>
+      <p>
+        <Link href="/jump" target="_self">Go to jump _self</Link>
+      </p>
+      <p>
+        <Link href="/jump" target="_blank">Go to jump _blank</Link>
+      </p>
     </div>
   );
 }
