@@ -3,7 +3,7 @@ import "./a.css";
 import { Link } from "blitz";
 import { Something } from "./component.tsx";
 import { useRandomCss } from "./loader.ts";
-import { useComputed } from "../../../deps.ts";
+import { useComputed } from "@preact/signals";
 
 export default function () {
   const randomCss = useRandomCss();
