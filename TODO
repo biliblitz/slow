@@ -1,4 +1,6 @@
-- [ ] front-end navigate function
-- [ ] SPA history restore, etc.
-- [ ] make actions work
-- [ ] MDX
+- [x] front-end navigate function
+- [x] SPA history restore, etc.
+- [x] make actions work
+- [x] MDX
+
+- [ ] Error handling

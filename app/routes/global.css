@@ -1,8 +1,3 @@
-/*
- * As you cannot import css files directly in Deno,
- * global.css is the entrance of the whole project.
- */
-
 @import "./nesting.css";
 
 @tailwind base;
