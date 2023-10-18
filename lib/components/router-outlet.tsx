@@ -1,16 +1,9 @@
-import {
-  ReadonlySignal,
-  signal,
-  useComputed,
-  useSignalEffect,
-} from "@preact/signals";
-import { useContext } from "preact/hooks";
+import { useComputed, useSignalEffect } from "@preact/signals";
 import { useManifest } from "../manifest/context.tsx";
 import { ManifestInjector } from "../manifest/injector.tsx";
 import { useRouter } from "./router.tsx";
-import { createContext } from "preact";
-
-const OutletContext = createContext<ReadonlySignal<number[]>>(signal([]));
+import { ComponentType, h } from "preact";
+import { LayoutBasicProps } from "../hooks/component.ts";
 
 export function RouterOutlet() {
   const manifest = useManifest();
@@ -23,28 +16,19 @@ export function RouterOutlet() {
     console.log("outlets update =>", router.outlets.value);
   });
 
+  const outlets = useComputed(() => {
+    const [index, ...layouts] = router.outlets.value
+      .map((id) => manifest.components[id])
+      .reverse();
+    return (layouts as ComponentType<LayoutBasicProps>[])
+      .reduce((children, layout) => h(layout, { children }), h(index, null));
+  });
+
   return (
-    <OutletContext.Provider value={router.outlets}>
-      <Outlet />
+    <>
+      {outlets}
       <ManifestInjector />
       <script type="module" src={entryPath}></script>
-    </OutletContext.Provider>
+    </>
   );
-}
-
-export function Outlet() {
-  const manifest = useManifest();
-  const outlets = useContext(OutletContext);
-  const children = useComputed(() => outlets.value.slice(1));
-  console.log("render <Outlet />");
-  if (outlets.value.length > 0) {
-    const Component = manifest.components[outlets.value[0]];
-    return (
-      <OutletContext.Provider value={children}>
-        <Component />
-      </OutletContext.Provider>
-    );
-  }
-
-  return null;
 }

@@ -102,16 +102,11 @@ export function RouterProvider(props: RouterProviderProps) {
       entry.components,
     );
 
-    // Clear old components
-    outlets.value = longestCommonPrefix(outlets.value, entry.components);
-
     // Render new components
-    setTimeout(() => {
-      batch(() => {
-        stores.value = store;
-        params.value = zip(entry.params, match.params);
-        outlets.value = entry.components;
-      });
+    batch(() => {
+      stores.value = store;
+      params.value = zip(entry.params, match.params);
+      outlets.value = entry.components;
     });
   };
 

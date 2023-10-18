@@ -6,7 +6,8 @@
   },
   "tasks": {
     "dev": "deno run -A --watch=app --reload=http://localhost:8029/ start.ts",
-    "start": "deno run -A --reload=http://localhost:8029/ --lock-write start.ts"
+    "start": "deno run -A --reload=http://localhost:8029/ --lock-write start.ts",
+    "deploy": "deno run -A --reload=http://localhost:8029/ start.ts"
   },
   "imports": {
     "blitz": "./mod.ts",
