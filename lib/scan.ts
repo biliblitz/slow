@@ -37,6 +37,10 @@ function isIndex(filename: string) {
   return isJsOrMdx(filename) && isNameOf("index", filename);
 }
 
+function isError(filename: string) {
+  return isJsOrMdx(filename) && isNameOf("error", filename);
+}
+
 function isLayout(filename: string) {
   return isJsOrMdx(filename) && isNameOf("layout", filename);
 }
@@ -98,6 +102,29 @@ function computeEntryRegex(dirs: string[]) {
   return { regex, params };
 }
 
+function computeErrorRegex(dirs: string[]) {
+  let exp = "";
+  const params = [];
+
+  for (const dir of dirs) {
+    if (dir === "[...]") {
+      exp += "/(.+)";
+      params.push("$");
+    } else if (dir.startsWith("[") && dir.endsWith("]")) {
+      exp += "/([^/]+)";
+      params.push(dir.slice(1, -1));
+    } else if (dir.startsWith("(") && dir.endsWith(")")) {
+      exp += "";
+    } else {
+      exp += "/" + escapeRegex(encodeURIComponent(dir));
+    }
+  }
+
+  // Add a optional trailing slash without final dollar
+  const regex = new RegExp(`^${exp}/?`, "i");
+  return { regex, params };
+}
+
 export type Entry = {
   regex: RegExp;
   params: string[];
@@ -109,6 +136,7 @@ export async function scanProjectStructure(entrance: string) {
   entrance = resolve(entrance);
   console.log(`start scanning from ${entrance}`);
 
+  const errors: Entry[] = [];
   const entires: Entry[] = [];
   const loaderPaths: string[] = [];
   const actionPaths: string[] = [];
@@ -125,6 +153,16 @@ export async function scanProjectStructure(entrance: string) {
     const { regex, params } = computeEntryRegex(dirs);
     console.log("entry", regex);
     entires.push({ components, regex, params, loaders });
+  }
+
+  function registerError(
+    dirs: string[],
+    loaders: number[],
+    components: number[],
+  ) {
+    const { regex, params } = computeErrorRegex(dirs);
+    console.log("error", regex);
+    errors.push({ components, regex, params, loaders });
   }
 
   function registerComponent(filePath: string) {
@@ -173,6 +211,7 @@ export async function scanProjectStructure(entrance: string) {
     }
 
     const indexPaths: string[] = [];
+    const errorPaths: string[] = [];
     const layoutPaths: string[] = [];
     const loaderPaths: string[] = [];
     const actionPaths: string[] = [];
@@ -181,6 +220,7 @@ export async function scanProjectStructure(entrance: string) {
     for (const filename of filenames) {
       const filePath = join(dirPath, filename);
       if (isIndex(filename)) indexPaths.push(filePath);
+      if (isError(filename)) errorPaths.push(filePath);
       if (isLayout(filename)) layoutPaths.push(filePath);
       if (isLoader(filename)) loaderPaths.push(filePath);
       if (isAction(filename)) actionPaths.push(filePath);
@@ -190,12 +230,17 @@ export async function scanProjectStructure(entrance: string) {
     // Test conflit files
     if (indexPaths.length > 1) {
       throw new Error(
-        `Multiple index in same directory found: ${indexPaths[1]}`,
+        `Multiple index page in same directory found: ${indexPaths[1]}`,
+      );
+    }
+    if (errorPaths.length > 1) {
+      throw new Error(
+        `Multiple error page in same directory found: ${indexPaths[1]}`,
       );
     }
     if (layoutPaths.length > 1) {
       throw new Error(
-        `Multiple layout in same directory found: ${layoutPaths[1]}`,
+        `Multiple layout page in same directory found: ${layoutPaths[1]}`,
       );
     }
     if (middlewarePaths.length > 1) {
@@ -242,11 +287,17 @@ export async function scanProjectStructure(entrance: string) {
         loaders,
       );
     }
+
+    // === final scan for errors ===
+    errorPaths.forEach((filePath) => {
+      registerError(dirs, loaders, [...layouts, registerComponent(filePath)]);
+    });
   }
 
   await scanDirectory(entrance, [], [], [], []);
 
   return {
+    errors,
     entires,
     loaderPaths,
     actionPaths,

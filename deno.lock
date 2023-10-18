@@ -2022,6 +2022,7 @@
     "http://localhost:8029/app/routes/csstest/index.tsx": "d052a29521b97b40bf8acd2a56a1ba91ef77b3927a2c076eaff0c430b0521ab4",
     "http://localhost:8029/app/routes/csstest/layout.tsx": "e4efe068ff6a520d685d47d3a03cc1cab7ba1a80dba57e25b160950be0711c9a",
     "http://localhost:8029/app/routes/csstest/loader.ts": "629c5a8e296abb158b15231de2d18233b7c6f62a796ff041219931a875b5652f",
+    "http://localhost:8029/app/routes/error.tsx": "a3cdcd12a98dbe94465bfefd2186554620ddcb3b1a7b5030b13d25b8b1b98062",
     "http://localhost:8029/app/routes/global.css": "7776e321976f2e306eaf074bc244953a71013c5165cbe4f5491f6bdd55470468",
     "http://localhost:8029/app/routes/hash/index.mdx": "c9360580cbebf83562de9c4b4722cd9b5d763da7e0317a25060978ddf4931d92",
     "http://localhost:8029/app/routes/hash/style.css": "7776e321976f2e306eaf074bc244953a71013c5165cbe4f5491f6bdd55470468",
