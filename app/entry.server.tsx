@@ -9,7 +9,9 @@ import postcssPresetEnv from "npm:postcss-preset-env@9.1.3";
 // postcss plugins & esbuild plugins should put here!
 const project = await buildBlitzCity({
   postcssPlugins: [
+    // https://github.com/denoland/deno/issues/20854
     tailwindcss(),
+    // https://github.com/denoland/deno/issues/19096
     postcssPresetEnv(),
   ],
 });

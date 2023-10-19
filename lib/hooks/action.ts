@@ -10,8 +10,8 @@ export type ActionFunction<T extends ActionReturnType> = (
 export type ActionState<T extends ActionReturnType = ActionReturnType> = {
   readonly data: ReadonlySignal<T | null>;
   readonly isRunning: ReadonlySignal<boolean>;
-  readonly ref: string;
   submit(formData: FormData): Promise<void>;
+  readonly __ref: string;
 };
 export type Action<T extends ActionReturnType> = () => ActionState<T>;
 export const ActionSymbol = Symbol("action");

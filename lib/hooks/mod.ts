@@ -23,7 +23,7 @@ export function useLoader(ref: string) {
   return useComputed(() => router.stores.value.get(ref) ?? null);
 }
 
-export function useAction(ref: string) {
+export function useAction(ref: string): ActionState {
   const router = useRouter();
   const data = useSignal<ActionReturnType | null>(null);
   const isRunning = useSignal(false);
@@ -73,7 +73,7 @@ export function useAction(ref: string) {
     }
   };
 
-  return { isRunning, data, ref, submit } satisfies ActionState;
+  return { isRunning, data, __ref: ref, submit };
 }
 
 export function useParam(param: string) {

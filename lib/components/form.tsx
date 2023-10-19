@@ -10,7 +10,7 @@ export function Form<T extends ActionReturnType>(props: FormProps<T>) {
 
   return (
     <form
-      action={`?saction=${props.action.ref}`}
+      action={`?saction=${props.action.__ref}`}
       method="POST"
       onSubmit={(e) => {
         e.preventDefault();
