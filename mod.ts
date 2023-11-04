@@ -1,7 +1,7 @@
 export { action$ } from "./lib/hooks/action.ts";
 export { loader$ } from "./lib/hooks/loader.ts";
-export { middleware$ } from "./lib/hooks/middleware.ts";
-export { index$, layout$ } from "./lib/hooks/component.ts";
+export { endpoint$, middleware$ } from "./lib/hooks/middleware.ts";
+export { error$, index$, layout$ } from "./lib/hooks/component.ts";
 export {
   BlitzCityProvider,
   Form,

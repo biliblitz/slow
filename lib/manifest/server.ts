@@ -1,16 +1,17 @@
 import { BlitzCity } from "../build-common.ts";
 import { LoaderStore } from "../utils/api.ts";
-import { Match } from "../utils/entry.ts";
 import { Manifest } from "./mod.ts";
 
 export function createServerManifest(
   city: BlitzCity,
-  match: Match,
+  params: string[],
   store: LoaderStore,
+  outlets: number[],
 ): Manifest {
   return {
     store,
-    match,
+    params,
+    outlets,
     entries: city.project.entires,
     basePath: "/",
     components: city.components,

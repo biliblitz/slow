@@ -1,70 +1,61 @@
 import { ComponentType } from "preact";
 import { extname, mdx, resolve, toFileUrl } from "../deps.ts";
 import { BuildBlitzCityOptions } from "./build-common.ts";
-import { ActionInternal, ActionSymbol } from "./hooks/action.ts";
-import { LoaderInternal, LoaderSymbol } from "./hooks/loader.ts";
+import { ActionInternal, isAction } from "./hooks/action.ts";
+import { isLoader, LoaderInternal } from "./hooks/loader.ts";
 import { Middleware } from "./hooks/middleware.ts";
 import { hashRef } from "./utils/crypto.ts";
-import { zip } from "./utils/entry.ts";
 import { isCss, isJs, isMdx } from "./utils/ext.ts";
 
 export async function buildServerLoaders(
   loaderPaths: string[],
-  loaderMiddlewares: number[][],
 ) {
   return await Promise.all(
-    zip(loaderPaths, loaderMiddlewares).map(
-      async ([path, middlewares], index) => {
-        const exports = await import(toFileUrl(path).href);
-        const loaders = await Promise.all(
-          Object.entries(exports)
-            .map(async ([name, loader_]) => {
-              const loader = loader_ as LoaderInternal;
-              if (!loader[LoaderSymbol]) {
-                throw new Error(
-                  `You can only export loaders from ${path}: ${name}`,
-                );
-              }
-              const ref = await hashRef(`loader-${index}-${name}`);
-              loader.ref = ref;
-              loader.name = name;
-              loader.middlewares = middlewares;
-              return loader;
-            }),
-        );
-        return loaders;
-      },
-    ),
+    loaderPaths.map(async (path, index) => {
+      const exports = await import(toFileUrl(path).href);
+      const loaders = await Promise.all(
+        Object.entries(exports)
+          .map(async ([name, loader_]) => {
+            const loader = loader_ as LoaderInternal;
+            if (!isLoader(loader)) {
+              throw new Error(
+                `You can only export loaders from ${path}: ${name}`,
+              );
+            }
+            const ref = await hashRef(`loader-${index}-${name}`);
+            loader.ref = ref;
+            loader.name = name;
+            return loader;
+          }),
+      );
+      return loaders;
+    }),
   );
 }
 
 export async function buildServerActions(
   actionPaths: string[],
-  actionMiddlewares: number[][],
 ) {
   return await Promise.all(
-    zip(actionPaths, actionMiddlewares).map(
-      async ([path, middlewares], index) => {
-        const exports = await import(toFileUrl(path).href);
-        const actions = await Promise.all(
-          Object.entries(exports)
-            .map(async ([name, action_]) => {
-              const action = action_ as ActionInternal;
-              if (!action[ActionSymbol]) {
-                throw new Error(
-                  `You can only export actions from ${path}: ${name}`,
-                );
-              }
-              const ref = await hashRef(`action-${index}-${name}`);
-              action.ref = ref;
-              action.name = name;
-              action.middlewares = middlewares;
-              return action;
-            }),
-        );
-        return actions;
-      },
-    ),
+    actionPaths.map(async (path, index) => {
+      const exports = await import(toFileUrl(path).href);
+      const actions = await Promise.all(
+        Object.entries(exports)
+          .map(async ([name, action_]) => {
+            const action = action_ as ActionInternal;
+            if (!isAction(action)) {
+              throw new Error(
+                `You can only export actions from ${path}: ${name}`,
+              );
+            }
+            const ref = await hashRef(`action-${index}-${name}`);
+            action.ref = ref;
+            action.name = name;
+            return action;
+          }),
+      );
+      return actions;
+    }),
   );
 }
 

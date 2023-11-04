@@ -16,4 +16,6 @@ const project = await buildBlitzCity({
   ],
 });
 
+Deno.exit(0);
+
 export default createBlitzCity(project, <Root />);

@@ -18,19 +18,14 @@ export function shortenManifest(manifest: Manifest) {
     manifest.basePath,
     manifest.entryIndex,
     manifest.entries.map((entry) =>
-      [
-        entry.regex,
-        entry.params,
-        entry.loaders,
-        entry.components,
-      ] as const
+      [entry.regex, entry.params, entry.directories] as const
     ),
     manifest.assetNames,
     manifest.assetGraph,
     manifest.componentIndexes,
     manifest.store.map(([ref, value]) => [ref, JSON.stringify(value)] as const),
-    manifest.match.index,
-    manifest.match.params,
+    manifest.params,
+    manifest.outlets,
   ] as const;
 }
 
@@ -47,15 +42,15 @@ export function lengthenManifest(shorten: ShortenManifest): Manifest {
     entries: shorten[2].map((entry) => ({
       regex: entry[0],
       params: entry[1],
-      loaders: entry[2],
-      components: entry[3],
+      directories: entry[2],
     })),
     assetNames: shorten[3],
     assetGraph: shorten[4],
     componentIndexes: shorten[5],
     store: shorten[6].map(([ref, value]) => [ref, JSON.parse(value)]),
     components: new Array(shorten[5].length),
-    match: { index: shorten[7], params: shorten[8] },
+    params: shorten[7],
+    outlets: shorten[8],
   };
 }
 

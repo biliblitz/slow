@@ -14,3 +14,7 @@ export function layout$<T = {}>(
 export function index$<T = {}>(component: ComponentType<T>) {
   return component;
 }
+
+export function error$<T = {}>(component: ComponentType<T>) {
+  return component;
+}

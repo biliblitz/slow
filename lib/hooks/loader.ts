@@ -8,13 +8,10 @@ export type LoaderFunction<T extends LoaderReturnType> = (
   event: RequestEvent,
 ) => LoaderReturn<T>;
 export type Loader<T extends LoaderReturnType> = () => ReadonlySignal<T>;
-export const LoaderSymbol = Symbol("loader");
 export interface LoaderInternal<T extends LoaderReturnType = LoaderReturnType> {
-  [LoaderSymbol]?: boolean;
   ref: string;
   name: string;
   func: LoaderFunction<T>;
-  middlewares: number[];
 }
 
 // this function only calls in Deno
@@ -22,13 +19,19 @@ export function loader$<T extends LoaderReturnType>(
   loaderFn: LoaderFunction<T>,
 ): Loader<T> {
   const internal: LoaderInternal<T> = {
-    [LoaderSymbol]: true,
     ref: "",
     name: "",
     func: loaderFn,
-    middlewares: [],
   };
   // we does not return loader itself in code
   // we will do a magic replacement in building process.
   return internal as unknown as Loader<T>;
+}
+
+export function isLoader(
+  loader: unknown,
+): loader is LoaderInternal<LoaderReturnType> {
+  // check function property only, just for warnings
+  return typeof loader === "object" && loader !== null && "func" in loader &&
+    typeof loader.func === "function";
 }

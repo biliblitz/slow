@@ -133,7 +133,9 @@ Error pages acts the same as index pages, but named as `error.tsx`.
 You can use `useErrorStatus()` and `useErrorMessage()` to get informations.
 
 ```tsx
-export default function () {
+import { error$ } from "blitz";
+
+export default error$(() => {
   const status = useErrorStatus();
   const message = useErrorMessage();
 
@@ -143,5 +145,36 @@ export default function () {
       <p>{message}</p>
     </div>
   );
-}
+});
 ```
+
+Error component will be injected in which layer of middleware/loaders throws. In example, if your project is like this:
+
+- `app/routes/`
+  - `foo/`
+    - `bar/`
+      - `middleware.ts`
+      - `loader.ts`
+      - `layout.tsx`
+      - `index.tsx`
+    - `middleware.ts`
+    - `layout.tsx`
+  - `middleware.ts`
+  - `layout.tsx`
+
+Blitz was designed to render pages as deep as it could. If your `app/routes/foo/bar/middleware.ts` or `app/routes/foo/bar/loader.ts` throws, there will not be enough data for `app/routes/foo/bar/layout.tsx` (`index.tsx`) to render, but we can still render `app/routes/foo/layout.tsx`. Therefore, the deepest layer of rendering is `app/routes/foo/layout.tsx`.
+
+Next, Blitz will check if there exists `error.tsx` inside the deepest route that not throws.
+
+If file `app/routes/foo/error.tsx` exists, pages will render like this:
+
+- `app/routes/layout.tsx`
+- `app/routes/foo/layout.tsx`
+- `app/routes/foo/error.tsx`
+
+If not, then Blitz will look for parent directory. If file `app/routes/error.tsx` exists, page will render like this:
+
+- `app/routes/layout.tsx`
+- `app/routes/error.tsx`
+
+If still not find any possible `error.tsx` inside `app/routes`, or `app/routes/middleware.ts` throws, Blitz will render an fallback component without any `layout.tsx`. You can override this fallback component by creating `app/error.tsx`.

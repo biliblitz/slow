@@ -14,25 +14,28 @@ export type ActionState<T extends ActionReturnType = ActionReturnType> = {
   readonly __ref: string;
 };
 export type Action<T extends ActionReturnType> = () => ActionState<T>;
-export const ActionSymbol = Symbol("action");
 export interface ActionInternal<T extends ActionReturnType = ActionReturnType> {
-  [ActionSymbol]?: boolean;
   ref: string;
   name: string;
   func: ActionFunction<T>;
-  middlewares: number[];
 }
 
 export function action$<T extends ActionReturnType>(
   actionFn: ActionFunction<T>,
 ): Action<T> {
   const internal: ActionInternal<T> = {
-    [ActionSymbol]: true,
     ref: "",
     name: "",
     func: actionFn,
-    middlewares: [],
   };
   // we will do a magic replacement in building process.
   return internal as unknown as Action<T>;
+}
+
+export function isAction(
+  action: unknown,
+): action is ActionInternal<ActionReturnType> {
+  // check function property only, just for warnings
+  return typeof action === "object" && action !== null && "func" in action &&
+    typeof action.func === "function";
 }

@@ -10,3 +10,9 @@ export function middleware$<T extends MiddlewareReturnType>(
 ) {
   return middleware;
 }
+
+export function endpoint$<T extends MiddlewareReturnType>(
+  endpoint: Middleware<T>,
+) {
+  return endpoint;
+}
