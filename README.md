@@ -2,7 +2,9 @@
 
 A full-stack framework for Deno.
 
-**WIP**
+**Deprecated**
+
+I'm pretty sure that frontend could not leave node.
 
 ## Install
 
