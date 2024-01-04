@@ -1,4 +1,4 @@
-import { esbuild, join, mdx, postcss, resolve } from "../server-deps.ts";
+import { esbuild, join, mdx, postcss, resolve } from "../deps.ts";
 import { buildClientAssets } from "./build-client.ts";
 import {
   buildServerActions,
@@ -24,10 +24,17 @@ export async function buildBlitzCity(
 
   const project = await scanProjectStructure(join(options.dir, "routes"));
 
-  const loaders = await buildServerLoaders(project.loaderPaths);
-  const actions = await buildServerActions(project.actionPaths);
   const middlewares = await buildServerMiddlewares(project.middlewarePaths);
+  const loaders = await buildServerLoaders(
+    project.loaderPaths,
+    project.loaderMiddlewares,
+  );
+  const actions = await buildServerActions(
+    project.actionPaths,
+    project.actionMiddlewares,
+  );
 
+  const actionMap = createActionMap(actions);
   const replacements = createReplacements(
     project.loaderPaths,
     project.actionPaths,
@@ -52,6 +59,7 @@ export async function buildBlitzCity(
     loaders,
     actions,
     project,
+    actionMap,
     components,
     middlewares,
   };
@@ -87,4 +95,14 @@ function createReplacements(
       return [path, contents] as [string, string];
     }),
   ]);
+}
+
+function createActionMap(
+  actions: ActionInternal[][],
+) {
+  return new Map(
+    actions.flatMap((action) =>
+      action.map((internal) => [internal.ref, internal])
+    ),
+  );
 }

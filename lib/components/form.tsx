@@ -1,11 +1,11 @@
-import { JSX } from "../../deps.ts";
-import { ActionState } from "../hooks/action.ts";
+import { JSX } from "preact";
+import { ActionReturnType, ActionState } from "../hooks/action.ts";
 
-type FormProps<T> =
+type FormProps<T extends ActionReturnType> =
   & Omit<JSX.HTMLAttributes<HTMLFormElement>, "action">
   & { action: ActionState<T> };
 
-export function Form<T>(props: FormProps<T>) {
+export function Form<T extends ActionReturnType>(props: FormProps<T>) {
   const { action, ...remains } = props;
 
   return (

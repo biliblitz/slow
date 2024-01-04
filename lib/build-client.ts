@@ -5,7 +5,7 @@ import {
   join,
   mdxPlugin,
   resolve,
-} from "../server-deps.ts";
+} from "../deps.ts";
 import { BuildBlitzCityOptions } from "./build-common.ts";
 import { postcssPlugin } from "./esbuild/postcss.ts";
 import { replacePlugin } from "./esbuild/replace.ts";
@@ -24,7 +24,10 @@ export async function buildClientAssets(
 
   const results = await esbuild.build({
     plugins: [
-      mdxPlugin({ jsxImportSource: "preact", ...options.mdxOptions }),
+      mdxPlugin({
+        jsxImportSource: "preact",
+        ...options.mdxOptions,
+      }) as esbuild.Plugin,
       postcssPlugin({ plugins: options.postcssPlugins }),
       {
         name: "resolve-mdx",

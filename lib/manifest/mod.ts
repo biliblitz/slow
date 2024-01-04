@@ -1,4 +1,4 @@
-import { ComponentType } from "../../deps.ts";
+import { ComponentType } from "preact";
 import { Entry } from "../scan.ts";
 import { LoaderStore } from "../utils/api.ts";
 import { Match } from "../utils/entry.ts";

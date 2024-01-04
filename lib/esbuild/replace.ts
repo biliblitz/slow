@@ -1,4 +1,4 @@
-import { esbuild } from "../../server-deps.ts";
+import { esbuild } from "../../deps.ts";
 
 export function replacePlugin(
   mapping: Map<string, string | Uint8Array>,

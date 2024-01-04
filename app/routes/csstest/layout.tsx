@@ -1,12 +1,13 @@
-import { Outlet } from "blitz";
-import "./b.css";
+import { layout$ } from "blitz";
 import { Something } from "./component.tsx";
 
-export default function () {
+import "./b.css";
+
+export default layout$((props) => {
   return (
     <div>
       <Something />
-      <Outlet />
+      {props.children}
     </div>
   );
-}
+});

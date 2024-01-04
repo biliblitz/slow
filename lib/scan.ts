@@ -1,4 +1,4 @@
-import { extname, join, resolve } from "../server-deps.ts";
+import { extname, join, resolve } from "../deps.ts";
 import { isJs, isJsOrMdx } from "./utils/ext.ts";
 
 function getFilenameWithoutExt(filename: string) {
@@ -35,6 +35,10 @@ function isNickOf(name: string, filename: string) {
 
 function isIndex(filename: string) {
   return isJsOrMdx(filename) && isNameOf("index", filename);
+}
+
+function isError(filename: string) {
+  return isJsOrMdx(filename) && isNameOf("error", filename);
 }
 
 function isLayout(filename: string) {
@@ -75,7 +79,7 @@ function getRouteLevel(dir: string) {
   }
 }
 
-function getRouteRegex(dirs: string[]) {
+function computeEntryRegex(dirs: string[]) {
   let exp = "";
   const params = [];
 
@@ -94,40 +98,71 @@ function getRouteRegex(dirs: string[]) {
   }
 
   // Add a optional trailing slash
-  exp += "/?";
-  exp = "^" + exp + "$";
-  const regex = new RegExp(exp, "i");
+  const regex = new RegExp(`^${exp}/?$`, "i");
+  return { regex, params };
+}
+
+function computeErrorRegex(dirs: string[]) {
+  let exp = "";
+  const params = [];
+
+  for (const dir of dirs) {
+    if (dir === "[...]") {
+      exp += "/(.+)";
+      params.push("$");
+    } else if (dir.startsWith("[") && dir.endsWith("]")) {
+      exp += "/([^/]+)";
+      params.push(dir.slice(1, -1));
+    } else if (dir.startsWith("(") && dir.endsWith(")")) {
+      exp += "";
+    } else {
+      exp += "/" + escapeRegex(encodeURIComponent(dir));
+    }
+  }
+
+  // Add a optional trailing slash without final dollar
+  const regex = new RegExp(`^${exp}/?`, "i");
   return { regex, params };
 }
 
 export type Entry = {
-  components: number[];
   regex: RegExp;
   params: string[];
   loaders: number[];
-  middlewares: number[];
+  components: number[];
 };
 
 export async function scanProjectStructure(entrance: string) {
   entrance = resolve(entrance);
   console.log(`start scanning from ${entrance}`);
 
+  const errors: Entry[] = [];
   const entires: Entry[] = [];
-  const componentPaths: string[] = [];
-  const middlewarePaths: string[] = [];
   const loaderPaths: string[] = [];
   const actionPaths: string[] = [];
+  const componentPaths: string[] = [];
+  const middlewarePaths: string[] = [];
+  const loaderMiddlewares: number[][] = [];
+  const actionMiddlewares: number[][] = [];
 
   function registerEntry(
     dirs: string[],
-    components: number[],
-    middlewares: number[],
     loaders: number[],
+    components: number[],
   ) {
-    const { regex, params } = getRouteRegex(dirs);
-    const entry: Entry = { components, regex, params, middlewares, loaders };
-    console.log("register entry", regex, components, params);
-    entires.push(entry);
+    const { regex, params } = computeEntryRegex(dirs);
+    console.log("entry", regex);
+    entires.push({ components, regex, params, loaders });
+  }
+
+  function registerError(
+    dirs: string[],
+    loaders: number[],
+    components: number[],
+  ) {
+    const { regex, params } = computeErrorRegex(dirs);
+    console.log("error", regex);
+    errors.push({ components, regex, params, loaders });
   }
 
   function registerComponent(filePath: string) {
@@ -144,17 +179,19 @@ export async function scanProjectStructure(entrance: string) {
     return id;
   }
 
-  function registerLoader(filePath: string) {
+  function registerLoader(filePath: string, middlewares: number[]) {
     const id = loaderPaths.length;
     loaderPaths.push(filePath);
-    console.log("loader", id, "=>", filePath);
+    loaderMiddlewares.push(middlewares);
+    console.log("loader", id, "=>", filePath, middlewares);
     return id;
   }
 
-  function registerAction(filePath: string) {
+  function registerAction(filePath: string, middlewares: number[]) {
     const id = actionPaths.length;
     actionPaths.push(filePath);
-    console.log("action", id, "=>", filePath);
+    actionMiddlewares.push(middlewares);
+    console.log("action", id, "=>", filePath, middlewares);
     return id;
   }
 
@@ -173,61 +210,68 @@ export async function scanProjectStructure(entrance: string) {
       if (entry.isDirectory) dirnames.push(entry.name);
     }
 
-    let foundIndex: null | number = null;
-    let foundLayout: null | number = null;
-    let foundMiddleware: null | number = null;
-    const currentLoaders: number[] = [];
-    const currentActions: number[] = [];
+    const indexPaths: string[] = [];
+    const errorPaths: string[] = [];
+    const layoutPaths: string[] = [];
+    const loaderPaths: string[] = [];
+    const actionPaths: string[] = [];
+    const middlewarePaths: string[] = [];
 
     for (const filename of filenames) {
       const filePath = join(dirPath, filename);
-      if (isIndex(filename)) {
-        if (foundIndex !== null) {
-          throw new Error(`Multiple index route found: ${filePath}`);
-        }
-        foundIndex = registerComponent(filePath);
-      }
-      if (isLayout(filename)) {
-        if (foundLayout !== null) {
-          throw new Error(`Multiple layout route found: ${filePath}`);
-        }
-        foundLayout = registerComponent(filePath);
-      }
-      if (isMiddleware(filename)) {
-        if (foundMiddleware !== null) {
-          throw new Error(
-            `Multiple middleware in same directory found: ${filePath}`,
-          );
-        }
-        foundMiddleware = registerMiddleware(filePath);
-      }
-      if (isLoader(filename)) {
-        currentLoaders.push(registerLoader(filePath));
-      }
-      if (isAction(filename)) {
-        currentActions.push(registerAction(filePath));
-      }
+      if (isIndex(filename)) indexPaths.push(filePath);
+      if (isError(filename)) errorPaths.push(filePath);
+      if (isLayout(filename)) layoutPaths.push(filePath);
+      if (isLoader(filename)) loaderPaths.push(filePath);
+      if (isAction(filename)) actionPaths.push(filePath);
+      if (isMiddleware(filename)) middlewarePaths.push(filePath);
     }
 
-    // add layout to layouts
-    const layouts = [...parentLayouts];
-    if (foundLayout !== null) {
-      layouts.push(foundLayout);
+    // Test conflit files
+    if (indexPaths.length > 1) {
+      throw new Error(
+        `Multiple index page in same directory found: ${indexPaths[1]}`,
+      );
+    }
+    if (errorPaths.length > 1) {
+      throw new Error(
+        `Multiple error page in same directory found: ${indexPaths[1]}`,
+      );
+    }
+    if (layoutPaths.length > 1) {
+      throw new Error(
+        `Multiple layout page in same directory found: ${layoutPaths[1]}`,
+      );
+    }
+    if (middlewarePaths.length > 1) {
+      throw new Error(
+        `Multiple middleware in same directory found: ${middlewarePaths[1]}`,
+      );
     }
 
-    // add middlewares
-    const middlewares = [...parentMiddlewares];
-    if (foundMiddleware !== null) {
-      middlewares.push(foundMiddleware);
-    }
+    // === first scan for layouts and middlewares ===
+    const layouts = [
+      ...parentLayouts,
+      ...layoutPaths.map((filePath) => registerComponent(filePath)),
+    ];
+    const middlewares = [
+      ...parentMiddlewares,
+      ...middlewarePaths.map((filePath) => registerMiddleware(filePath)),
+    ];
 
-    // sort loaders
-    const loaders = [...parentLoaders, ...currentLoaders];
+    // === second scan for loaders and actions ===
+    const loaders = [
+      ...parentLoaders,
+      ...loaderPaths.map((filePath) => registerLoader(filePath, middlewares)),
+    ];
+    actionPaths.forEach((filePath) => {
+      registerAction(filePath, middlewares);
+    });
 
-    // register entry
-    if (foundIndex !== null) {
-      registerEntry(dirs, [...layouts, foundIndex], middlewares, loaders);
-    }
+    // === third scan for index ===
+    indexPaths.forEach((filePath) => {
+      registerEntry(dirs, loaders, [...layouts, registerComponent(filePath)]);
+    });
 
     // sort dirnames from
     // Catch -> Ignore -> Param -> Match
@@ -243,16 +287,24 @@ export async function scanProjectStructure(entrance: string) {
         loaders,
       );
     }
+
+    // === final scan for errors ===
+    errorPaths.forEach((filePath) => {
+      registerError(dirs, loaders, [...layouts, registerComponent(filePath)]);
+    });
   }
 
   await scanDirectory(entrance, [], [], [], []);
 
   return {
+    errors,
     entires,
-    componentPaths,
-    middlewarePaths,
     loaderPaths,
     actionPaths,
+    componentPaths,
+    middlewarePaths,
+    loaderMiddlewares,
+    actionMiddlewares,
   };
 }
 

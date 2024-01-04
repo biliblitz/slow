@@ -1,22 +1,32 @@
-// deno-lint-ignore-file no-explicit-any
-import { ReadonlySignal } from "../../deps.ts";
+// deno-lint-ignore-file ban-types
+import { ReadonlySignal } from "@preact/signals";
 import { RequestEvent } from "./mod.ts";
 
-export type LoaderReturn<T> = T | Promise<T>;
-export type LoaderFunction<T> = (event: RequestEvent) => LoaderReturn<T>;
-export type Loader<T = any> = () => ReadonlySignal<T>;
-export interface LoaderInternal<T = any> {
+export type LoaderReturnType = {} | null;
+export type LoaderReturn<T extends LoaderReturnType> = T | Promise<T>;
+export type LoaderFunction<T extends LoaderReturnType> = (
+  event: RequestEvent,
+) => LoaderReturn<T>;
+export type Loader<T extends LoaderReturnType> = () => ReadonlySignal<T>;
+export const LoaderSymbol = Symbol("loader");
+export interface LoaderInternal<T extends LoaderReturnType = LoaderReturnType> {
+  [LoaderSymbol]?: boolean;
   ref: string;
   name: string;
   func: LoaderFunction<T>;
+  middlewares: number[];
 }
 
 // this function only calls in Deno
-export function loader$<T>(loaderFn: LoaderFunction<T>): Loader<T> {
+export function loader$<T extends LoaderReturnType>(
+  loaderFn: LoaderFunction<T>,
+): Loader<T> {
   const internal: LoaderInternal<T> = {
+    [LoaderSymbol]: true,
     ref: "",
     name: "",
     func: loaderFn,
+    middlewares: [],
   };
   // we does not return loader itself in code
   // we will do a magic replacement in building process.

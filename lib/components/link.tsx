@@ -1,4 +1,4 @@
-import { JSX } from "../../deps.ts";
+import { JSX } from "preact";
 import { useNavigate } from "./router.tsx";
 
 interface LinkProps extends JSX.HTMLAttributes<HTMLAnchorElement> {
@@ -11,8 +11,13 @@ export function Link(props: LinkProps) {
   return (
     <a
       onClick={(e) => {
-        e.preventDefault();
-        navigate(e.currentTarget.href);
+        const target = new URL(e.currentTarget.href, location.href);
+        const self = (e.currentTarget.target || "_self") === "_self";
+        const sameOrigin = target.host === location.host;
+        if (self && sameOrigin) {
+          e.preventDefault();
+          navigate(target);
+        }
       }}
       {...props}
     />

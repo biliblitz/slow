@@ -1,4 +1,4 @@
-import { useComputed } from "../../deps.ts";
+import { useComputed } from "@preact/signals";
 import { useManifest } from "../manifest/context.tsx";
 import { getLinkPreloadAs } from "../utils/ext.ts";
 import { useRouter } from "./router.tsx";

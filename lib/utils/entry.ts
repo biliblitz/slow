@@ -5,7 +5,10 @@ export type Match = {
   params: string[];
 };
 
-export function matchPathname(entries: Entry[], pathname: string) {
+export function matchEntries(
+  entries: Entry[],
+  pathname: string,
+) {
   for (const [index, entry] of entries.entries()) {
     const exec = entry.regex.exec(pathname);
     if (exec) {

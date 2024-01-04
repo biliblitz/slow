@@ -1,28 +1,21 @@
-// deno-lint-ignore-file no-explicit-any
-import {
-  batch,
-  ComponentChildren,
-  ComponentType,
-  createContext,
-  ReadonlySignal,
-  useComputed,
-  useEffect,
-  useRef,
-  useSignal,
-} from "../../deps.ts";
+import { batch, ReadonlySignal, useComputed, useSignal } from "@preact/signals";
 import { useManifest } from "../manifest/context.tsx";
 import { Manifest } from "../manifest/mod.ts";
 import { LoaderStore, ServerResponse } from "../utils/api.ts";
 import { useContextOrThrows } from "../utils/hooks.ts";
-import { matchPathname, zip } from "../utils/entry.ts";
+import { matchEntries, zip } from "../utils/entry.ts";
+import { LoaderReturnType } from "../hooks/loader.ts";
+import { longestCommonPrefix } from "../utils/algo.ts";
+import { ComponentChildren, ComponentType, createContext } from "preact";
+import { useEffect, useRef } from "preact/hooks";
 
-type Navigate = (href: string) => Promise<void>;
+type Navigate = (href: string | URL) => Promise<void>;
 type Render = (pathname: string, loaders: LoaderStore) => Promise<void>;
 
 type Router = {
   preloads: ReadonlySignal<number[]>;
   outlets: ReadonlySignal<number[]>;
-  stores: ReadonlySignal<ReadonlyMap<string, any>>;
+  stores: ReadonlySignal<ReadonlyMap<string, LoaderReturnType>>;
   params: ReadonlySignal<ReadonlyMap<string, string>>;
   navigate: Navigate;
   render: Render;
@@ -37,6 +30,10 @@ const RouterContext = createContext<Router | null>(null);
 
 function replaceState(state: Partial<HistoryState>) {
   history.replaceState({ ...history.state, ...state }, "");
+}
+
+function replaceURL(url: string | URL) {
+  history.replaceState(history.state, "", url);
 }
 
 function pushState(state: HistoryState, url: string | URL) {
@@ -81,12 +78,14 @@ export function RouterProvider(props: RouterProviderProps) {
 
   const entry = manifest.entries[manifest.match.index];
 
-  const params = useSignal<[string, string][]>([]);
+  const params = useSignal<[string, string][]>(
+    zip(entry.params, manifest.match.params),
+  );
   const outlets = useSignal<number[]>(entry.components);
   const preloads = useSignal<number[]>(entry.components);
 
   const render = async (pathname: string, store: LoaderStore) => {
-    const match = matchPathname(manifest.entries, pathname);
+    const match = matchEntries(manifest.entries, pathname);
     if (!match) {
       console.error("Navigation 404!!");
       return;
@@ -103,7 +102,7 @@ export function RouterProvider(props: RouterProviderProps) {
       entry.components,
     );
 
-    // Trigger render
+    // Render new components
     batch(() => {
       stores.value = store;
       params.value = zip(entry.params, match.params);
@@ -111,9 +110,15 @@ export function RouterProvider(props: RouterProviderProps) {
     });
   };
 
-  const navigate = async (href: string) => {
+  const navigate = async (href: string | URL) => {
     // calculate target url
-    const targetUrl = new URL(href, location.href);
+    const targetUrl = href instanceof URL ? href : new URL(href, location.href);
+
+    // if jump to external website
+    if (targetUrl.host !== location.host) {
+      open(targetUrl);
+      return;
+    }
 
     // if is the same page, then we don't need fetch any data
     if (targetUrl.pathname === location.pathname) {
@@ -124,6 +129,7 @@ export function RouterProvider(props: RouterProviderProps) {
       if (targetAnchor !== originAnchor && targetAnchor) {
         document.getElementById(targetAnchor.slice(1))
           ?.scrollIntoView({ behavior: "smooth" });
+        replaceURL(targetUrl);
         return;
       }
 
@@ -155,8 +161,7 @@ export function RouterProvider(props: RouterProviderProps) {
   };
 
   useEffect(() => {
-    // TODO
-    replaceState({ stores: manifest.store });
+    replaceState({ stores: manifest.store, scroll: [0, 0] });
 
     addEventListener("popstate", async (e) => {
       const state = e.state as HistoryState;

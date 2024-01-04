@@ -1,11 +1,13 @@
-import { VNode } from "../deps.ts";
-import { extname, renderToString, typeByExtension } from "../server-deps.ts";
+import { VNode } from "preact";
+import { extname, typeByExtension } from "../deps.ts";
 import { BlitzCity } from "./build-common.ts";
+import { ActionInternal } from "./hooks/action.ts";
 import { RequestEvent } from "./hooks/mod.ts";
 import { ManifestProvider } from "./manifest/context.tsx";
 import { createServerManifest } from "./manifest/server.ts";
-import { LoaderStore } from "./utils/api.ts";
-import { Match, matchPathname } from "./utils/entry.ts";
+import { LoaderStore, ServerResponse } from "./utils/api.ts";
+import { matchEntries } from "./utils/entry.ts";
+import { renderToString } from "preact-render-to-string";
 
 const LOGO = `
  ____  _                ____ _ _         
@@ -27,14 +29,25 @@ export function createBlitzCity(city: BlitzCity, vnode: VNode) {
   }
 
   async function runLoaders(event: RequestEvent, loaders: number[]) {
+    const middlewares = loaders
+      .flatMap((index) => city.loaders[index][0]?.middlewares || [])
+      .sort((a, b) => a - b);
+    await runMiddleware(event, [...new Set(middlewares)]);
+
     const store = [] as LoaderStore;
     for (const index of loaders) {
       for (const loader of city.loaders[index]) {
         const result = await loader.func(event);
-        store.push([loader.name, result]);
+        store.push([loader.ref, result]);
       }
     }
+
     return store;
+  }
+
+  async function runAction(event: RequestEvent, action: ActionInternal) {
+    await runMiddleware(event, action.middlewares);
+    return await action.func(event);
   }
 
   function createRequestEvent(
@@ -47,38 +60,83 @@ export function createBlitzCity(city: BlitzCity, vnode: VNode) {
 
   return async (req: Request) => {
     const url = new URL(req.url);
-    const headers = new Headers();
+    let pathname = url.pathname;
 
-    if (url.pathname.startsWith("/build/")) {
-      const assetName = url.pathname.slice(1);
+    if (pathname.startsWith("/build/")) {
+      const assetName = pathname.slice(1);
       const index = city.assets.assetNames.indexOf(assetName);
       console.log(assetName, index);
       if (index > -1) {
         const assetBuffer = city.assets.assetBuffers[index];
         const mimeType = typeByExtension(extname(assetName)) ||
           "application/octet-stream";
+        const headers = new Headers();
         headers.set("content-type", mimeType);
         headers.set("cache-control", "max-age=31536000");
         return new Response(assetBuffer, { headers });
       }
     }
 
-    const pathname = url.pathname;
+    // remove tailing s-data.json if exist
+    let isDataRequest = false;
+    if (pathname.endsWith("/s-data.json")) {
+      isDataRequest = true;
+      pathname = pathname.slice(0, -11);
+    }
 
-    const match = matchPathname(city.project.entires, pathname);
-    if (!match) return new Response(null, { status: 404 });
-    const entry = city.project.entires[match.index];
-    const event = createRequestEvent(req, match.params, headers);
-    await runMiddleware(event, entry.middlewares);
-    const store = await runLoaders(event, entry.loaders);
-    const manifest = createServerManifest(city, match, store);
+    const match = matchEntries(city.project.entires, pathname);
+    if (match) {
+      const headers = new Headers();
 
-    const html = renderToString(
-      <ManifestProvider manifest={manifest}>
-        {vnode}
-      </ManifestProvider>,
-    );
-    headers.set("content-type", "text/html");
-    return new Response("<!DOCTYPE html>" + html, { headers });
+      // redirect if not ending with slash
+      if (!pathname.endsWith("/")) {
+        url.pathname = pathname + "/";
+        headers.set("location", url.href);
+        return new Response(null, { status: 301, headers });
+      }
+
+      const entry = city.project.entires[match.index];
+      const event = createRequestEvent(req, entry.params, headers);
+
+      if (req.method === "POST") {
+        const actionRef = url.searchParams.get("saction");
+        const foundAction = city.actionMap.get(actionRef || "");
+        if (!foundAction) return new Response(null, { status: 400 });
+        const action = await runAction(event, foundAction);
+        const store = await runLoaders(event, entry.loaders);
+        if (isDataRequest) {
+          return Response.json(
+            { ok: "data", store, action } satisfies ServerResponse,
+            { headers },
+          );
+        }
+        const manifest = createServerManifest(city, match, store);
+        const html = renderToString(
+          <ManifestProvider manifest={manifest}>
+            {vnode}
+          </ManifestProvider>,
+        );
+        headers.set("content-type", "text/html");
+        return new Response("<!DOCTYPE html>" + html, { headers });
+      }
+
+      const store = await runLoaders(event, entry.loaders);
+      if (isDataRequest) {
+        return Response.json(
+          { ok: "data", store } satisfies ServerResponse,
+          { headers },
+        );
+      }
+      const manifest = createServerManifest(city, match, store);
+      const html = renderToString(
+        <ManifestProvider manifest={manifest}>
+          {vnode}
+        </ManifestProvider>,
+      );
+      headers.set("content-type", "text/html");
+      return new Response("<!DOCTYPE html>" + html, { headers });
+    }
+
+    return new Response(null, { status: 404 });
   };
 }

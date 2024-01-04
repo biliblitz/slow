@@ -1,4 +1,4 @@
-import { esbuild, postcss, toFileUrl } from "../../server-deps.ts";
+import { esbuild, postcss, toFileUrl } from "../../deps.ts";
 import { isAssert, isCss } from "../utils/ext.ts";
 
 const cache = await caches.open("esbuild-plugin-postcss");

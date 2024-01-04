@@ -1,4 +1,4 @@
-import { JSX } from "../../deps.ts";
+import { JSX } from "preact";
 import { RouterProvider } from "./router.tsx";
 
 export function BlitzCityProvider(
