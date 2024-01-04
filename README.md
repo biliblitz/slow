@@ -2,6 +2,8 @@
 
 A full-stack framework for Deno.
 
+**Deprecated: I'm pretty sure that frontend could not leave node.**
+
 Our target is to keep everything simple and stupid.
 
 ## Install
